@@ -9,7 +9,7 @@
 * 知识库： 一个记录小知识点和小代码片段的地方，类似于速查手册。
 * 博客： 记录大的系统性的文章和项目，还能记录生活和图片之类的。
 
-博客：[https://lanlance.cn](https://lanlance)
+博客：[https://lanlance.cn](https://lanlance.cn)
 
 网盘：[https://pan.lanlance.cn](https://pan.lanlance.cn)
 
