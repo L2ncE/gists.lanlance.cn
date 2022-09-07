@@ -4,5 +4,5 @@
 
 ## 机器学习 <a href="#machine-learning" id="machine-learning"></a>
 
-* [Page 1](machine-learning/page-1/README.md)
-  * [Page 2](machine-learning/page-1/page-2.md)
+* [测试](machine-learning/ce-shi/README.md)
+  * [Page 2](machine-learning/ce-shi/page-2.md)
