@@ -2,7 +2,7 @@
 
 * [🙌🏻Hi there!](README.md)
 
-## 👨💻 大数据 <a href="#big-data" id="big-data"></a>
+## ⛏ 数据挖掘 <a href="#data-mining" id="data-mining"></a>
 
-* [⛏ 数据挖掘](machine-learning/ce-shi/README.md)
-  * [matplotlib](machine-learning/ce-shi/page-2.md)
+* [⛏ matplotlib](data-mining/matplotlib/README.md)
+  * [快速上手](data-mining/matplotlib/kuai-su-shang-shou.md)
