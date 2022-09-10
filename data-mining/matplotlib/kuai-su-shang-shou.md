@@ -1,8 +1,4 @@
----
-description: 数据分析工具——matplotlib
----
-
-# matplotlib
+# 快速上手
 
 #### 快速上手
 
