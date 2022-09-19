@@ -54,3 +54,46 @@ plt.show()
 
 
 ![](https://picture.lanlance.cn/i/2022/09/19/63287f1423c75.png)
+
+#### 需求：再添加一个城市的温度变化。收集到北京当天温度变化情况，温度在1度到3度。
+
+在拿到第二个需求后很明显可以发现这次需要我们准备两个y值，除此以外绘制图像时我们也需要调用两次api。而其他部分和之前的区别并不算大
+
+```python
+x = range(60)
+y_shanghai = [random.uniform(15, 18) for i in x]
+y_beijing = [random.uniform(1, 3) for i in x]
+
+# 2、创建画布
+plt.figure(figsize=(20, 8), dpi=80)
+
+# 3、绘制图像
+plt.plot(x, y_shanghai, color="r", linestyle="-.", label="上海")
+plt.plot(x, y_beijing, color="b", label="北京")
+
+# 显示图例
+plt.legend()
+
+# 修改x、y刻度
+# 准备x的刻度说明
+x_label = ["11点{}分".format(i) for i in x]
+plt.xticks(x[::5], x_label[::5])
+plt.yticks(range(0, 40, 5))
+
+# 添加网格显示
+plt.grid(linestyle="--", alpha=0.5)
+
+# 添加描述信息
+plt.xlabel("时间变化")
+plt.ylabel("温度变化")
+plt.title("上海、北京11点到12点每分钟的温度变化状况")
+
+# 4、显示图
+plt.show()
+```
+
+
+
+![](https://picture.lanlance.cn/i/2022/09/19/6328804b123eb.png)
+
+从图中可以看出，绘制图像时我们还给两根折线设置了不同的颜色以及风格
