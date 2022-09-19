@@ -13,5 +13,5 @@
 
 网盘：[https://pan.lanlance.cn](https://pan.lanlance.cn)
 
-邮箱：yuanxinhao@lanlance.cn
+邮箱：\[yuanxinhao@lanlance.cn]\(yuanxinhao@lanlance.cn)
 
