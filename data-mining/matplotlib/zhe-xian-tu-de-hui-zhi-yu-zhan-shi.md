@@ -20,7 +20,5 @@ plt.savefig("shanghai.png")
 plt.show()
 ```
 
-
-
-![](https://picture.lanlance.cn/i/2022/09/19/63287d5650b76.png)
+![](../../.gitbook/assets/image.png)
 
