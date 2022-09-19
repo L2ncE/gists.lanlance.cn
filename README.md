@@ -13,5 +13,5 @@
 
 网盘：[https://pan.lanlance.cn](https://pan.lanlance.cn)
 
-邮箱：[llance\_24@foxmail.com](https://app.gitbook.com/u/rxG6ZGtjspQLYTTgJnWA4U8GVOF2)
+邮箱：yuanxinhao@lanlance.cn
 
