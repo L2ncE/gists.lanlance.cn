@@ -11,3 +11,4 @@
   * [多个坐标系表示](data-mining/matplotlib/duo-ge-zuo-biao-xi-biao-shi.md)
   * [绘制数学函数图像](data-mining/matplotlib/hui-zhi-shu-xue-han-shu-tu-xiang.md)
   * [散点图绘制](data-mining/matplotlib/san-dian-tu-hui-zhi.md)
+  * [柱状图的绘制](data-mining/matplotlib/zhu-zhuang-tu-de-hui-zhi.md)
