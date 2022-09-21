@@ -41,6 +41,4 @@ d2 = t4 - t3
 
 分别获取`d1` 与`d2` 的值
 
-
-
 ![](https://picture.lanlance.cn/i/2022/09/21/632b239052c2c.png)
