@@ -14,4 +14,5 @@
   * [柱状图绘制](data-mining/matplotlib/zhu-zhuang-tu-hui-zhi.md)
   * [直方图绘制](data-mining/matplotlib/zhi-fang-tu-hui-zhi.md)
   * [饼图绘制](data-mining/matplotlib/bing-tu-hui-zhi.md)
-* [Numpy](data-mining/numpy.md)
+* [Numpy](data-mining/numpy/README.md)
+  * [快速上手](data-mining/numpy/kuai-su-shang-shou.md)
