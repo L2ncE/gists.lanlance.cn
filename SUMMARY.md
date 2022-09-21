@@ -16,3 +16,4 @@
   * [饼图绘制](data-mining/matplotlib/bing-tu-hui-zhi.md)
 * [Numpy](data-mining/numpy/README.md)
   * [快速上手](data-mining/numpy/kuai-su-shang-shou.md)
+  * [ndarray与Python原生list运算效率对比](data-mining/numpy/ndarray-yu-python-yuan-sheng-list-yun-suan-xiao-shuai-dui-bi.md)
