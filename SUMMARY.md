@@ -18,3 +18,4 @@
   * [快速上手](data-mining/numpy/kuai-su-shang-shou.md)
   * [ndarray与Python原生list运算效率对比](data-mining/numpy/ndarray-yu-python-yuan-sheng-list-yun-suan-xiao-shuai-dui-bi.md)
   * [ndarray的属性](data-mining/numpy/ndarray-de-shu-xing.md)
+  * [ndarray的形状](data-mining/numpy/ndarray-de-xing-zhuang.md)
