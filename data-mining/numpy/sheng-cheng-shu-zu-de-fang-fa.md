@@ -155,3 +155,48 @@ array([ 0,  5, 10, 15, 20])
 data1 = np.random.uniform(low=-1, high=1, size=1000000)
 ```
 
+把 data1 输出出来看看
+
+```python
+array([-0.71158366, -0.74950877,  0.15876375, ...,  0.76520229,
+        0.64071715,  0.59968039])
+```
+
+用 matplotlib 把这个随机数组用直方图输出出来
+
+```python
+import matplotlib.pyplot as plt
+
+# 1、创建画布
+plt.figure(figsize=(20, 8), dpi=80)
+
+# 2、绘制直方图
+plt.hist(data1, 1000)
+
+# 3、显示图像
+plt.show()
+```
+
+![](https://picture.lanlance.cn/i/2022/09/26/63319c0e4a6e0.png)
+
+同样可以用`random.normal` 来生成正态分布是随机数组
+
+```python
+# 正态分布
+data2 = np.random.normal(loc=1.75, scale=0.1, size=1000000)
+```
+
+再使用 matplotlib 输出图像
+
+```python
+# 1、创建画布
+plt.figure(figsize=(20, 8), dpi=80)
+
+# 2、绘制直方图
+plt.hist(data2, 1000)
+
+# 3、显示图像
+plt.show()
+```
+
+![](https://picture.lanlance.cn/i/2022/09/26/63319d0061f5d.png)
