@@ -21,3 +21,4 @@
   * [ndarray的形状](data-mining/numpy/ndarray-de-xing-zhuang.md)
   * [ndarray的类型](data-mining/numpy/ndarray-de-lei-xing.md)
   * [生成数组的方法](data-mining/numpy/sheng-cheng-shu-zu-de-fang-fa.md)
+  * [形状修改](data-mining/numpy/xing-zhuang-xiu-gai.md)
