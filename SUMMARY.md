@@ -23,3 +23,4 @@
   * [生成数组的方法](data-mining/numpy/sheng-cheng-shu-zu-de-fang-fa.md)
   * [形状修改](data-mining/numpy/xing-zhuang-xiu-gai.md)
   * [类型修改](data-mining/numpy/lei-xing-xiu-gai.md)
+  * [数组的去重](data-mining/numpy/shu-zu-de-qu-zhong.md)
