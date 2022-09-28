@@ -26,3 +26,4 @@
   * [数组的去重](data-mining/numpy/shu-zu-de-qu-zhong.md)
   * [逻辑运算](data-mining/numpy/luo-ji-yun-suan.md)
   * [np.where（三元运算符）](data-mining/numpy/np.where-san-yuan-yun-suan-fu.md)
+  * [统计运算](data-mining/numpy/tong-ji-yun-suan.md)
