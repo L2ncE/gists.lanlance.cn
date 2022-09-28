@@ -29,3 +29,4 @@
   * [统计运算](data-mining/numpy/tong-ji-yun-suan.md)
   * [数组与数的运算](data-mining/numpy/shu-zu-yu-shu-de-yun-suan.md)
   * [数组与数组的运算](data-mining/numpy/shu-zu-yu-shu-zu-de-yun-suan.md)
+  * [矩阵运算](data-mining/numpy/ju-zhen-yun-suan.md)
