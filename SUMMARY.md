@@ -24,3 +24,4 @@
   * [形状修改](data-mining/numpy/xing-zhuang-xiu-gai.md)
   * [类型修改](data-mining/numpy/lei-xing-xiu-gai.md)
   * [数组的去重](data-mining/numpy/shu-zu-de-qu-zhong.md)
+  * [逻辑运算](data-mining/numpy/luo-ji-yun-suan.md)
