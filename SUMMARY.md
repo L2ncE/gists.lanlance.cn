@@ -60,6 +60,6 @@
 ## 📝 Leetcode Cookbook <a href="leetcode-cookbook" id="leetcode-cookbook"></a>
 
 * [二分查找](leetcode/erfen.md)
-* [动态规划](leetcode/doublezz.md)
+* [动态规划](leetcode/donggui.md)
 * [哈希表](leetcode/hash.md)
 * [双指针](leetcode/doublezz.md)

@@ -1,5 +1,3 @@
-## 双指针
-
 ### 977. 有序数组的平方
 
 https://leetcode.cn/problems/squares-of-a-sorted-array/comments/
@@ -8,7 +6,7 @@ https://leetcode.cn/problems/squares-of-a-sorted-array/comments/
 
 **暴力排序法**
 
-```c++
+```cpp
 class Solution {
 public:
     vector<int> sortedSquares(vector<int>& nums) {
@@ -23,7 +21,7 @@ public:
 
 **双指针法**
 
-```c++
+```cpp
 class Solution {
 public:
     vector<int> sortedSquares(vector<int> &nums) {

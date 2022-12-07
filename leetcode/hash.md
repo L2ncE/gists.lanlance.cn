@@ -1,5 +1,3 @@
-## 哈希表
-
 ### 217. 存在重复元素
 
 https://leetcode.cn/problems/contains-duplicate
@@ -48,26 +46,3 @@ public:
 ```
 
 开一个哈希表，每过一个就把值和下标存表里，这样查询时只需要 O(1) 的时间复杂度。
-
-## 双指针
-
-### 977. 有序数组的平方
-
-https://leetcode.cn/problems/squares-of-a-sorted-array/comments/
-
-给你一个按 **非递减顺序** 排序的整数数组 `nums`，返回 **每个数字的平方** 组成的新数组，要求也按 **非递减顺序** 排序。
-
-**暴力排序法**
-
-```c++
-class Solution {
-public:
-    vector<int> sortedSquares(vector<int>& nums) {
-        for(int i = 0; i < nums.size(); i++){
-            nums[i] = nums[i] * nums[i];
-        }
-        sort(nums.begin(), nums.end());
-        return nums;
-    }
-};
-```
