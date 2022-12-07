@@ -50,10 +50,16 @@
   * [SYN flood 攻击](408CookBook/computer-net/synflood.md)
   * [虚拟专用网（VPN)](408CookBook/computer-net/vpn.md)
 * [操作系统](408CookBook/os/README.md)
-  * [操作系统的进程详解](408CookBook/computer-net/OSI-qiceng.md)
-  * [进程的状态模型](408CookBook/computer-net/httpversion.md)
-  * [操作系统的线程详解](408CookBook/computer-net/httpstucture.md)
-  * [用户态/内核态详解](408CookBook/computer-net/addkey.md)
-  * [IO/CPU 密集型任务](408CookBook/computer-net/addkey.md)
-  * [协程基础详解](408CookBook/computer-net/addkey.md)
+  * [操作系统的进程详解](408CookBook/os/jincheng.md)
+  * [进程的状态模型](408CookBook/os/jinchengstatus.md)
+  * [操作系统的线程详解](408CookBook/os/xiancheng.md)
+  * [用户态/内核态详解](408CookBook/os/userandsys.md)
+  * [IO/CPU 密集型任务](408CookBook/os/iocpu.md)
+  * [协程基础详解](408CookBook/os/xiancheng.md)
 
+## 📝 Leetcode Cookbook <a href="leetcode-cookbook" id="leetcode-cookbook"></a>
+
+* [二分查找](leetcode/erfen.md)
+* [动态规划](leetcode/doublezz.md)
+* [哈希表](leetcode/hash.md)
+* [双指针](leetcode/doublezz.md)
