@@ -56,6 +56,8 @@
   - [用户态/内核态详解](408CookBook/os/userandsys.md)
   - [IO/CPU 密集型任务](408CookBook/os/iocpu.md)
   - [协程基础详解](408CookBook/os/xiancheng.md)
+  - [存储器的层次结构详解](408CookBook/os/memlayer.md)
+  - [虚拟内存](408CookBook/os/vmem.md)
 
 ## 📝 Leetcode Cookbook <a href="leetcode-cookbook" id="leetcode-cookbook"></a>
 
