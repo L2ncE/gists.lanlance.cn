@@ -217,3 +217,64 @@ public:
 ```
 
 快的比慢的跑得快，总的遇到，要不然就是没有，直接返回 false。
+
+### 349. 两个数组的交集
+
+https://leetcode.cn/problems/intersection-of-two-arrays/
+
+给定两个数组 nums1 和 nums2 ，返回 它们的交集 。输出结果中的每个元素一定是 唯一 的。我们可以 不考虑输出结果的顺序 。
+
+```cpp
+class Solution {
+public:
+    vector<int> intersection(vector<int>& nums1, vector<int>& nums2) {
+        vector<int> res;
+        unordered_map<int, int> h1, h2;
+        for(int i = 0; i < nums1.size(); i++){
+            h1[nums1[i]]++;
+        }
+        for(int i = 0; i < nums2.size(); i++){
+            if(h1[nums2[i]] != 0 && h2[nums2[i]] == 0){
+                res.push_back(nums2[i]);
+                h2[nums2[i]]++;
+            }
+        }
+        return res;
+    }
+};
+```
+
+两个哈希表即可解决问题，第二个哈希表用于判断答案里是否已经有这个元素了。
+
+### 454. 四数相加 II
+
+https://leetcode.cn/problems/4sum-ii/
+
+给你四个整数数组 nums1、nums2、nums3 和 nums4 ，数组长度都是 n ，请你计算有多少个元组 (i, j, k, l) 能满足：
+
+0 <= i, j, k, l < n
+nums1[i] + nums2[j] + nums3[k] + nums4[l] == 0
+
+```cpp
+class Solution {
+public:
+    int fourSumCount(vector<int>& nums1, vector<int>& nums2, vector<int>& nums3, vector<int>& nums4) {
+        unordered_map<int, int> h;
+        int n = nums1.size();
+        for(int i = 0; i < n; i++){
+            for(int j = 0; j < n; j++){
+                h[nums1[i] + nums2[j]]++;
+            }
+        }
+        int res = 0;
+        for(int i = 0; i < n; i++){
+            for(int j = 0; j < n; j++){
+                res += h[- nums3[i] - nums4[j]];
+            }
+        }
+        return res;
+    }
+};
+```
+
+用一个哈希表存两个数的和，再遍历另外两个数看是不是相反数，总和为 0 时就把哈希表中存的个数加到答案里面。

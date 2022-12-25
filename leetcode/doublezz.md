@@ -547,3 +547,109 @@ public:
 ```
 
 用两个哈希表和一个 cnt 进行维护，经典滑动窗口。
+
+### 202. 快乐数
+
+https://leetcode.cn/problems/happy-number/
+
+编写一个算法来判断一个数 n 是不是快乐数。
+
+「快乐数」  定义为：
+
+对于一个正整数，每一次将该数替换为它每个位置上的数字的平方和。
+然后重复这个过程直到这个数变为 1，也可能是 无限循环 但始终变不到 1。
+如果这个过程 结果为  1，那么这个数就是快乐数。
+如果 n 是 快乐数 就返回 true ；不是，则返回 false 。
+
+```cpp
+class Solution {
+public:
+    int get(int x){
+        int res = 0;
+        while(x){
+            res += (x % 10) * (x % 10);
+            x /= 10;
+        }
+        return res;
+    }
+    bool isHappy(int n) {
+       int f = get(n), s = n;
+       while(f != s){
+           f = get(get(f));
+           s = get(s);
+       }
+       return f == 1;
+    }
+};
+```
+
+用一个快慢指针，因为他会有循环，所以判断循环的数字是否为 1 就行。
+
+### 15. 三数之和
+
+https://leetcode.cn/problems/3sum/
+
+给你一个整数数组 nums ，判断是否存在三元组 [nums[i], nums[j], nums[k]] 满足 i != j、i != k 且 j != k ，同时还满足 nums[i] + nums[j] + nums[k] == 0 。请
+
+你返回所有和为 0 且不重复的三元组。
+
+注意：答案中不可以包含重复的三元组。
+
+```cpp
+class Solution {
+public:
+    vector<vector<int>> threeSum(vector<int>& nums) {
+        vector<vector<int>> res;
+        sort(nums.begin(), nums.end());
+        unordered_map<int, int> h;
+        for(int i = 0; i < nums.size(); i++){
+            if(i && nums[i] == nums[i - 1]) continue;
+            for(int j = i + 1, k = nums.size() - 1; j < k; j++){
+                if(j > i + 1 && nums[j] == nums[j - 1]) continue;
+                while(j < k - 1 && nums[i] + nums[j] + nums[k - 1] >= 0) k--;
+                if(nums[i] + nums[j] + nums[k] == 0){
+                    res.push_back({nums[i], nums[j], nums[k]});
+                }
+            }
+        }
+        return res;
+    }
+};
+```
+
+首先需要把 i 给定下来，然后遍历 j 与 k 即可，需要注意的是我们需要进行去重，不然会有重复答案的出现。
+
+### 18. 四数之和
+
+https://leetcode.cn/problems/4sum/
+
+给你一个由 n 个整数组成的数组  nums ，和一个目标值 target 。请你找出并返回满足下述全部条件且不重复的四元组  [nums[a], nums[b], nums[c], nums[d]] （若两个四元组元素一一对应，则认为两个四元组重复）：
+
+0 <= a, b, c, d < n
+a、b、c 和 d 互不相同
+nums[a] + nums[b] + nums[c] + nums[d] == target
+你可以按 任意顺序 返回答案 。
+
+```cpp
+class Solution {
+public:
+    vector<vector<int>> fourSum(vector<int>& nums, int target) {
+        vector<vector<int>> res;
+        sort(nums.begin(), nums.end());
+        for(int i = 0; i < nums.size(); i++){
+            if(i && nums[i] == nums[i - 1]) continue;
+            for(int j = i + 1; j < nums.size(); j++){
+                if(j > i + 1 && nums[j] == nums[j - 1]) continue;
+                for(int k = j + 1, u = nums.size() - 1; k < u; k++){
+                    if(k > j + 1 && nums[k] == nums[k - 1]) continue;
+                    while(k < u - 1 && ((long)nums[i] + nums[j] + nums[k] + nums[u - 1]) >= target) u--;
+                    if(((long)nums[i] + nums[j] + nums[k] + nums[u]) == target) res.push_back({nums[i], nums[j], nums[k], nums[u]});
+                }
+            }
+        }
+        return res;
+    }
+};
+```
+
+与三数之和区别不大，就是加一层循环就行了。
