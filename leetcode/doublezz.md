@@ -653,3 +653,38 @@ public:
 ```
 
 与三数之和区别不大，就是加一层循环就行了。
+
+### 151. 反转字符串中的单词
+
+https://leetcode.cn/problems/reverse-words-in-a-string/
+
+给你一个字符串 s ，请你反转字符串中 单词 的顺序。
+
+单词 是由非空格字符组成的字符串。s 中使用至少一个空格将字符串中的 单词 分隔开。
+
+返回 单词 顺序颠倒且 单词 之间用单个空格连接的结果字符串。
+
+注意：输入字符串 s 中可能会存在前导空格、尾随空格或者单词间的多个空格。返回的结果字符串中，单词间应当仅用单个空格分隔，且不包含任何额外的空格。
+
+```cpp
+class Solution {
+public:
+    string reverseWords(string s) {
+        reverse(s.begin(), s.end());
+        int k = 0;
+        for(int i = 0; i < s.length(); i++){
+            if(s[i] == ' ') continue;
+            int j = i, t = k;
+            while(j < s.length() && s[j] != ' ') s[t++] = s[j++];
+            reverse(s.begin() + k, s.begin() + t);
+            s[t++] = ' ';
+            k = t, i = j;
+        }
+        if(k) k--;
+        s.erase(s.begin() + k, s.end());
+        return s;
+    }
+};
+```
+
+将每一个单词都放到前面，一个指针指向原本的字符串，另外一个指向最后成为结果的字符串。注意找到一个单词就要将其翻转。
