@@ -31,7 +31,7 @@
   - [数组与数组的运算](data-mining/numpy/shu-zu-yu-shu-zu-de-yun-suan.md)
   - [矩阵运算](data-mining/numpy/ju-zhen-yun-suan.md)
 
-## 👻 #ComputerBase CookBook <a href="#cb-cookbook" id="#cb-cookbook"></a>
+## 👻 计算机基础 <a href="#cb-cookbook" id="#cb-cookbook"></a>
 
 - [计算机网络](computer-base/cn.md)
 - [操作系统](computer-base/os.md)
