@@ -31,33 +31,11 @@
   - [数组与数组的运算](data-mining/numpy/shu-zu-yu-shu-zu-de-yun-suan.md)
   - [矩阵运算](data-mining/numpy/ju-zhen-yun-suan.md)
 
-## 👻 #408 CookBook <a href="#408-cookbook" id="#408-cookbook"></a>
+## 👻 #ComputerBase CookBook <a href="#cb-cookbook" id="#cb-cookbook"></a>
 
-- [计算机网络](408CookBook/computer-net/README.md)
-  - [OSI 七层模型详解](408CookBook/computer-net/OSI-qiceng.md)
-  - [HTTP 版本详解：0.9、1.0、1.1、2.0](408CookBook/computer-net/httpversion.md)
-  - [HTTP 报文结构、请求方法与状态码详解](408CookBook/computer-net/httpstucture.md)
-  - [安全传输的基础：加密](408CookBook/computer-net/addkey.md)
-  - [HTTPS 安全基础 —— TLS 技术详解](408CookBook/computer-net/tls.md)
-  - [DNS 服务详解](408CookBook/computer-net/dns-server.md)
-  - [DNS 安全](408CookBook/computer-net/dns-security.md)
-  - [TCP/UDP 协议详解](408CookBook/computer-net/tcpudp.md)
-  - [TCP 三次握手（建立过程）](408CookBook/computer-net/tcpshakehand.md)
-  - [TCP 四次挥手（释放过程）](408CookBook/computer-net/tcpwavehand.md)
-  - [TCP 的可靠传输（滑动窗口）](408CookBook/computer-net/tcptrans.md)
-  - [拥塞避免算法](408CookBook/computer-net/avoid.md)
-  - [TCP 粘包](408CookBook/computer-net/tcppackage.md)
-  - [SYN flood 攻击](408CookBook/computer-net/synflood.md)
-  - [虚拟专用网（VPN)](408CookBook/computer-net/vpn.md)
-- [操作系统](408CookBook/os/README.md)
-  - [操作系统的进程详解](408CookBook/os/jincheng.md)
-  - [进程的状态模型](408CookBook/os/jinchengstatus.md)
-  - [操作系统的线程详解](408CookBook/os/xiancheng.md)
-  - [用户态/内核态详解](408CookBook/os/userandsys.md)
-  - [IO/CPU 密集型任务](408CookBook/os/iocpu.md)
-  - [协程基础详解](408CookBook/os/xiancheng.md)
-  - [存储器的层次结构详解](408CookBook/os/memlayer.md)
-  - [虚拟内存](408CookBook/os/vmem.md)
+- [计算机网络](computer-base/cn.md)
+- [操作系统](computer-base/os.md)
+- [数据库](computer-base/db.md)
 
 ## 📝 Leetcode <a href="leetcode" id="leetcode"></a>
 
