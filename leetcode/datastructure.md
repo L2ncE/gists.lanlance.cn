@@ -416,3 +416,616 @@ public:
 ```
 
 画图才能解决，这道题比较绕，简单说就是到相遇点之后，让一个指针回 head 那个位置，然后两个指针以相同的速度重新跑，最后相遇点就是我们的答案。
+
+### 232. 用栈实现队列
+
+https://leetcode.cn/problems/implement-queue-using-stacks/
+
+请你仅使用两个栈实现先入先出队列。队列应当支持一般队列支持的所有操作（push、pop、peek、empty）：
+
+实现 MyQueue 类：
+
+void push(int x) 将元素 x 推到队列的末尾
+int pop() 从队列的开头移除并返回元素
+int peek() 返回队列开头的元素
+boolean empty() 如果队列为空，返回 true ；否则，返回 false
+说明：
+
+你 只能 使用标准的栈操作 —— 也就是只有  push to top, peek/pop from top, size, 和  is empty  操作是合法的。
+你所使用的语言也许不支持栈。你可以使用 list 或者 deque（双端队列）来模拟一个栈，只要是标准的栈操作即可。
+
+```cpp
+class MyQueue {
+public:
+    stack<int> a, b;
+    MyQueue() {}
+
+    void push(int x) {
+        a.push(x);
+    }
+
+    int pop() {
+        while(a.size() > 1) b.push(a.top()), a.pop();
+        int t = a.top();
+        a.pop();
+        while(b.size()) a.push(b.top()), b.pop();
+        return t;
+    }
+
+    int peek() {
+        while(a.size() > 1) b.push(a.top()), a.pop();
+        int t = a.top();
+        while(b.size()) a.push(b.top()), b.pop();
+        return t;
+    }
+
+    bool empty() {
+        return a.empty();
+    }
+};
+
+/**
+ * Your MyQueue object will be instantiated and called as such:
+ * MyQueue* obj = new MyQueue();
+ * obj->push(x);
+ * int param_2 = obj->pop();
+ * int param_3 = obj->peek();
+ * bool param_4 = obj->empty();
+ */
+```
+
+难点在于对 `pop()` 和 `peek` 的操作，用一个临时栈来存放最后一个值以外的元素，最后再将其打回即可。
+
+### 225. 用队列实现栈
+
+https://leetcode.cn/problems/implement-stack-using-queues/
+
+请你仅使用两个队列实现一个后入先出（LIFO）的栈，并支持普通栈的全部四种操作（push、top、pop 和 empty）。
+
+实现 MyStack 类：
+
+void push(int x) 将元素 x 压入栈顶。
+int pop() 移除并返回栈顶元素。
+int top() 返回栈顶元素。
+boolean empty() 如果栈是空的，返回 true ；否则，返回 false 。
+
+注意：
+
+你只能使用队列的基本操作 —— 也就是  push to back、peek/pop from front、size 和  is empty  这些操作。
+你所使用的语言也许不支持队列。  你可以使用 list （列表）或者 deque（双端队列）来模拟一个队列  , 只要是标准的队列操作即可。
+
+```cpp
+class MyStack {
+public:
+    queue<int> a, b;
+    MyStack() {
+
+    }
+
+    void push(int x) {
+        a.push(x);
+    }
+
+    int pop() {
+        while(a.size() > 1) b.push(a.front()), a.pop();
+        int t = a.front();
+        a.pop();
+        while(b.size()) a.push(b.front()), b.pop();
+        return t;
+    }
+
+    int top() {
+        while(a.size() > 1) b.push(a.front()), a.pop();
+        int t = a.front();
+        a.pop();
+        while(b.size()) a.push(b.front()), b.pop();
+        a.push(t);
+        return t;
+    }
+
+    bool empty() {
+        return a.empty();
+    }
+};
+
+/**
+ * Your MyStack object will be instantiated and called as such:
+ * MyStack* obj = new MyStack();
+ * obj->push(x);
+ * int param_2 = obj->pop();
+ * int param_3 = obj->top();
+ * bool param_4 = obj->empty();
+ */
+```
+
+和上题类似。有一点点逻辑的不同，看代码就懂了。
+
+### 1047. 删除字符串中的所有相邻重复项
+
+https://leetcode.cn/problems/remove-all-adjacent-duplicates-in-string/
+
+给出由小写字母组成的字符串  S，重复项删除操作会选择两个相邻且相同的字母，并删除它们。
+
+在 S 上反复执行重复项删除操作，直到无法继续删除。
+
+在完成所有重复项删除操作后返回最终的字符串。答案保证唯一。
+
+```cpp
+class Solution {
+public:
+    string removeDuplicates(string s) {
+        string res;
+        for(auto c : s){
+            if(res.size() && res.back() == c) res.pop_back();
+            else res += c;
+        }
+        return res;
+    }
+};
+```
+
+用栈实现即可。
+
+### 144. 二叉树的前序遍历
+
+https://leetcode.cn/problems/binary-tree-preorder-traversal/
+
+给你二叉树的根节点 root ，返回它节点值的 前序 遍历。
+
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
+public:
+    void traversal(TreeNode* cur, vector<int> &res){
+        if(!cur) return;
+        vec.push_back(cur->val);
+        traversal(cur->left, res);
+        traversal(cur->right, res);
+    }
+    vector<int> preorderTraversal(TreeNode* root) {
+        vector<int> res;
+        traversal(root, res);
+        return res;
+    }
+};
+```
+
+递归即可。
+
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
+public:
+    vector<int> preorderTraversal(TreeNode* root) {
+        vector<int> res;
+        stack<TreeNode*> stk;
+        while(root || stk.size()){
+            while(root){
+                res.push_back(root->val);
+                stk.push(root);
+                root = root->left;
+            }
+            root = stk.top()->right;
+            stk.pop();
+        }
+        return res;
+    }
+};
+```
+
+迭代法
+
+### 145. 二叉树的后序遍历
+
+https://leetcode.cn/problems/binary-tree-postorder-traversal/
+
+给你一棵二叉树的根节点 root ，返回其节点值的 后序遍历 。
+
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
+public:
+    void traversal(TreeNode *cur, vector<int>& res){
+        if(!cur) return;
+        traversal(cur->left, res);
+        traversal(cur->right, res);
+        res.push_back(cur->val);
+    }
+    vector<int> postorderTraversal(TreeNode* root) {
+        vector<int> res;
+        traversal(root, res);
+        return res;
+    }
+};
+```
+
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
+public:
+    vector<int> postorderTraversal(TreeNode* root) {
+        vector<int> res;
+        stack<TreeNode*> stk;
+        while(root || stk.size()){
+            while(root){
+                res.push_back(root->val);
+                stk.push(root);
+                root = root->right;
+            }
+            root = stk.top()->left;
+            stk.pop();
+        }
+        reverse(res.begin(), res.end());
+        return res;
+    }
+};
+```
+
+### 94. 二叉树的中序遍历
+
+https://leetcode.cn/problems/binary-tree-inorder-traversal/
+
+给定一个二叉树的根节点 root ，返回 它的 中序 遍历 。
+
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
+public:
+    vector<int> inorderTraversal(TreeNode* root) {
+        vector<int> res;
+        stack<TreeNode*> stk;
+        while(root || stk.size()){
+            while(root){
+                stk.push(root);
+                root = root->left;
+            }
+            root = stk.top();
+            stk.pop();
+            res.push_back(root->val);
+            root = root->right;
+        }
+        return res;
+    }
+};
+```
+
+### 102. 二叉树的层序遍历
+
+https://leetcode.cn/problems/binary-tree-level-order-traversal/
+
+给你二叉树的根节点 root ，返回其节点值的 层序遍历 。 （即逐层地，从左到右访问所有节点）。
+
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
+public:
+    vector<vector<int>> levelOrder(TreeNode* root) {
+        vector<vector<int>> res;
+        queue<TreeNode*> q;
+        if(root) q.push(root);
+
+        while(q.size()){
+            vector<int> level;
+            int len = q.size();
+            while(len--){
+                auto t = q.front();
+                level.push_back(t->val);
+                q.pop();
+                if(t->left) q.push(t->left);
+                if(t->right) q.push(t->right);
+            }
+            res.push_back(level);
+        }
+        return res;
+    }
+};
+```
+
+宽搜一下即可。
+
+### 107. 二叉树的层序遍历 II
+
+https://leetcode.cn/problems/binary-tree-level-order-traversal-ii/
+
+给你二叉树的根节点 root ，返回其节点值 自底向上的层序遍历 。 （即按从叶子节点所在层到根节点所在的层，逐层从左向右遍历）
+
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
+public:
+    vector<vector<int>> levelOrderBottom(TreeNode* root) {
+        vector<vector<int>> res;
+        queue<TreeNode*> q;
+        if(root) q.push(root);
+
+        while(q.size()){
+            vector<int> level;
+            int len = q.size();
+            while(len--){
+                auto t = q.front();
+                q.pop();
+                level.push_back(t->val);
+                if(t->left) q.push(t->left);
+                if(t->right) q.push(t->right);
+            }
+            res.push_back(level);
+        }
+        reverse(res.begin(), res.end());
+        return res;
+    }
+};
+```
+
+相较上一题，翻转一下即可。
+
+### 199. 二叉树的右视图
+
+https://leetcode.cn/problems/binary-tree-right-side-view/
+
+给定一个二叉树的 根节点 root，想象自己站在它的右侧，按照从顶部到底部的顺序，返回从右侧所能看到的节点值。
+
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
+public:
+    vector<int> rightSideView(TreeNode* root) {
+        vector<int> res;
+        queue<TreeNode*> q;
+        if(root) q.push(root);
+
+        while(q.size()){
+            int len = q.size();
+            while(len--){
+                auto t = q.front();
+                q.pop();
+                if(!len) res.push_back(t->val);
+                if(t->left) q.push(t->left);
+                if(t->right) q.push(t->right);
+            }
+        }
+        return res;
+    }
+};
+```
+
+用宽搜，然后找到每一排最后一个即可。
+
+### 104. 二叉树的最大深度
+
+https://leetcode.cn/problems/maximum-depth-of-binary-tree/
+
+给定一个二叉树，找出其最大深度。
+
+二叉树的深度为根节点到最远叶子节点的最长路径上的节点数。
+
+说明: 叶子节点是指没有子节点的节点。
+
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
+public:
+    int maxDepth(TreeNode* root) {
+        int res = 0;
+        queue<TreeNode*> q;
+        if(root) q.push(root);
+
+        while(q.size()){
+            int len = q.size();
+            res++;
+            while(len--){
+                auto t = q.front();
+                q.pop();
+                if(t->left) q.push(t->left);
+                if(t->right) q.push(t->right);
+            }
+        }
+        return res;
+    }
+};
+```
+
+一样的宽搜，每一层给结果加一即可。
+
+### 111. 二叉树的最小深度
+
+https://leetcode.cn/problems/minimum-depth-of-binary-tree/
+
+给定一个二叉树，找出其最小深度。
+
+最小深度是从根节点到最近叶子节点的最短路径上的节点数量。
+
+说明：叶子节点是指没有子节点的节点。
+
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
+public:
+    int minDepth(TreeNode* root) {
+        int res = 0;
+        queue<TreeNode*> q;
+        if(root) q.push(root);
+
+        while(q.size()){
+            int len = q.size();
+            res++;
+            while(len--){
+                auto t = q.front();
+                q.pop();
+                if(!t->left && !t->right) return res;
+                if(t->left) q.push(t->left);
+                if(t->right) q.push(t->right);
+            }
+        }
+        return res;
+    }
+};
+```
+
+在上一题的基础上，只要遇到叶子结点就返回答案。
+
+### 226. 翻转二叉树
+
+https://leetcode.cn/problems/invert-binary-tree/
+
+给你一棵二叉树的根节点 root ，翻转这棵二叉树，并返回其根节点。
+
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
+public:
+    TreeNode* invertTree(TreeNode* root) {
+        if(!root) return NULL;
+        swap(root->left, root->right);
+        invertTree(root->left);
+        invertTree(root->right);
+        return root;
+    }
+};
+```
+
+递归翻转左右子树即可。
+
+### 101. 对称二叉树
+
+https://leetcode.cn/problems/symmetric-tree/
+
+给你一个二叉树的根节点 root ， 检查它是否轴对称。
+
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
+public:
+    bool isSymmetric(TreeNode* root) {
+        if(!root) return true;
+        return dfs(root->left, root->right);
+    }
+
+    bool dfs(TreeNode* left, TreeNode* right){
+        if(!left && !right) return true;
+        if(!left || !right || left->val != right->val) return false;
+        return dfs(left->right, right->left) && dfs(left->left, right->right);
+    }
+};
+```
+
+爆搜左右两边，然后分别比较。
