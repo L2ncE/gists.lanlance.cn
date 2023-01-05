@@ -1029,3 +1029,344 @@ public:
 ```
 
 爆搜左右两边，然后分别比较。
+
+### 222. 完全二叉树的节点个数
+
+给你一棵 完全二叉树 的根节点 root ，求出该树的节点个数。
+
+完全二叉树 的定义如下：在完全二叉树中，除了最底层节点可能没填满外，其余每层节点数都达到最大值，并且最下面一层的节点都集中在该层最左边的若干位置。若最底层为第 h 层，则该层包含 1~ 2h  个节点。
+
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
+public:
+    int countNodes(TreeNode* root) {
+        if(!root) return NULL;
+        int left = countNodes(root->left);
+        int right = countNodes(root->right);
+        return left + right + 1;
+    }
+};
+```
+
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
+public:
+    int countNodes(TreeNode* root) {
+        int res = 0;
+        queue<TreeNode*> q;
+        if(root) q.push(root);
+
+        while(q.size()){
+            int len = q.size();
+            while(len--){
+                res++;
+                auto t = q.front();
+                q.pop();
+                if(t->left) q.push(t->left);
+                if(t->right) q.push(t->right);
+            }
+        }
+        return res;
+    }
+};
+```
+
+两种暴力做法。
+
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
+public:
+    int countNodes(TreeNode* root) {
+        if(!root) return 0;
+        auto left = root->left, right = root->right;
+        int ld = 0, rd = 0;
+        while(left){
+            left = left->left;
+            ld++;
+        }
+        while(right){
+            right =  right->right;
+            rd++;
+        }
+        if(ld == rd) return (2 << ld) - 1;
+        return countNodes(root->left) + countNodes(root->right) + 1;
+    }
+};
+```
+
+更快的做法，利用了完全二叉树的性质。
+
+### 110. 平衡二叉树
+
+给定一个二叉树，判断它是否是高度平衡的二叉树。
+
+本题中，一棵高度平衡二叉树定义为：
+
+一个二叉树每个节点 的左右两个子树的高度差的绝对值不超过 1 。
+
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
+public:
+    bool ans;
+    bool isBalanced(TreeNode* root) {
+        ans = true;
+        dfs(root);
+        return ans;
+    }
+
+    int dfs(TreeNode* root){
+        if(!root) return 0;
+        int lh = dfs(root->left);
+        int rh = dfs(root->right);
+        if(abs(lh - rh) > 1) ans = false;
+        return max(lh, rh) + 1;
+    }
+};
+```
+
+首先定义一个全局的变量保存答案，然后递归左右字数找到最深的点，取差的绝对值即可。
+
+### 257. 二叉树的所有路径
+
+给你一个二叉树的根节点 root ，按 任意顺序 ，返回所有从根节点到叶子节点的路径。
+
+叶子节点 是指没有子节点的节点。
+
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
+public:
+    vector<string> ans;
+    vector<int> path;
+
+    vector<string> binaryTreePaths(TreeNode* root) {
+        if(root) dfs(root);
+        return ans;
+    }
+
+    void dfs(TreeNode* root){
+        path.push_back(root->val);
+        if(!root->left && !root->right){
+            string line = to_string(path[0]);
+            for(int i = 1; i < path.size(); i++){
+                line += "->" + to_string(path[i]);
+            }
+            ans.push_back(line);
+        }else{
+            if(root->left) dfs(root->left);
+            if(root->right) dfs(root->right);
+        }
+        path.pop_back();
+    }
+};
+```
+
+爆搜即可。
+
+### 404. 左叶子之和
+
+给定二叉树的根节点 root ，返回所有左叶子之和。
+
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
+public:
+    int res = 0;
+
+    int sumOfLeftLeaves(TreeNode* root) {
+        dfs(root);
+        return res;
+    }
+
+    void dfs(TreeNode* root){
+        if(!root) return;
+        if(root->left){
+            if(!root->left->left && !root->left->right) res += root->left->val;
+        }
+        dfs(root->left);
+        dfs(root->right);
+    }
+};
+```
+
+爆搜即可。
+
+### 513. 找树左下角的值
+
+给定一个二叉树的 根节点 root，请找出该二叉树的 最底层 最左边 节点的值。
+
+假设二叉树中至少有一个节点。
+
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
+public:
+    int findBottomLeftValue(TreeNode* root) {
+        int res = 0;
+        queue<TreeNode*> q;
+        if(root) q.push(root);
+
+        while(q.size()){
+            int len = q.size();
+            vector<int> line;
+            while(len--){
+                auto t = q.front();
+                line.push_back(t->val);
+                q.pop();
+                if(t->left) q.push(t->left);
+                if(t->right) q.push(t->right);
+            }
+            res = line[0];
+        }
+        return res;
+    }
+};
+```
+
+就爱层序遍历，别的咳嗽。
+
+### 112. 路径总和
+
+给你二叉树的根节点  root 和一个表示目标和的整数  targetSum 。判断该树中是否存在 根节点到叶子节点 的路径，这条路径上所有节点值相加等于目标和  targetSum 。如果存在，返回 true ；否则，返回 false 。
+
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
+public:
+    bool hasPathSum(TreeNode* root, int sum) {
+        if(!root) return false;
+        sum -= root->val;
+        if(!root->left && !root->right) return !sum;
+        return root->left && hasPathSum(root->left, sum) || root->right && hasPathSum(root->right, sum);
+    }
+};
+```
+
+当是叶子结点且 sum = 0 时返回真即可。
+
+### 654. 最大二叉树
+
+给定一个不重复的整数数组  nums 。  最大二叉树   可以用下面的算法从  nums 递归地构建:
+
+创建一个根节点，其值为  nums 中的最大值。
+递归地在最大值   左边   的   子数组前缀上   构建左子树。
+递归地在最大值 右边 的   子数组后缀上   构建右子树。
+返回  nums 构建的 最大二叉树 。
+
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
+public:
+    TreeNode* constructMaximumBinaryTree(vector<int>& nums) {
+        return dfs(nums, 0, nums.size() - 1);
+    }
+
+    TreeNode* dfs(vector<int>& nums, int l, int r){
+        if(l > r) return NULL;
+        int idx = l;
+        for(int i = l + 1; i <= r; i++){
+            if(nums[i] > nums[idx]) idx = i;
+        }
+        TreeNode *res = new TreeNode(nums[idx]);
+        res->left = dfs(nums, l, idx - 1);
+        res->right = dfs(nums, idx + 1, r);
+        return res;
+    }
+};
+```
+
+直接按题目描述进行模拟即可。用递归函数 dfs(nums,l,r)dfs(nums,l,r) 表示对于 `[numsl,numsr][numsl,numsr]` 区间构建一棵树。具体如下：找到 `[numsl,numsr][numsl,numsr]` 区间内的最大值，记为 numsidnumsid，这个数字就是根节点的值。分别递归左右子树：dfs(nums,l,id−1)dfs(nums,l,id−1) 和 dfs(nums,id+1,r)dfs(nums,id+1,r)。
