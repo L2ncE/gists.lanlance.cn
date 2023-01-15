@@ -1330,6 +1330,8 @@ public:
 
 ### 654. 最大二叉树
 
+https://leetcode.cn/problems/maximum-binary-tree/
+
 给定一个不重复的整数数组  nums 。  最大二叉树   可以用下面的算法从  nums 递归地构建:
 
 创建一个根节点，其值为  nums 中的最大值。
@@ -1370,3 +1372,137 @@ public:
 ```
 
 直接按题目描述进行模拟即可。用递归函数 dfs(nums,l,r)dfs(nums,l,r) 表示对于 `[numsl,numsr][numsl,numsr]` 区间构建一棵树。具体如下：找到 `[numsl,numsr][numsl,numsr]` 区间内的最大值，记为 numsidnumsid，这个数字就是根节点的值。分别递归左右子树：dfs(nums,l,id−1)dfs(nums,l,id−1) 和 dfs(nums,id+1,r)dfs(nums,id+1,r)。
+
+### 617. 合并二叉树
+
+https://leetcode.cn/problems/merge-two-binary-trees/submissions/
+
+给你两棵二叉树： root1 和 root2 。
+
+想象一下，当你将其中一棵覆盖到另一棵之上时，两棵树上的一些节点将会重叠（而另一些不会）。你需要将这两棵树合并成一棵新二叉树。合并的规则是：如果两个节点重叠，那么将这两个节点的值相加作为合并后节点的新值；否则，不为 null 的节点将直接作为新二叉树的节点。
+
+返回合并后的二叉树。
+
+注意: 合并过程必须从两个树的根节点开始。
+
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
+public:
+    TreeNode* mergeTrees(TreeNode* root1, TreeNode* root2) {
+        if(root2) swap(root1, root2);
+        if(!root1) return NULL;
+        if(root2) root1->val += root2->val;
+        root1->left = mergeTrees(root1->left, root2 ? root2->left : NULL);
+        root1->right = mergeTrees(root1->right, root2 ? root2->right : NULL);
+        return root1;
+    }
+};
+```
+
+首先让 root1 一定存在，接着 root2 也存在就将值相加，最后遍历左右儿子即可。
+
+### 98. 验证二叉搜索树
+
+https://leetcode.cn/problems/validate-binary-search-tree/
+
+给你一个二叉树的根节点 root ，判断其是否是一个有效的二叉搜索树。
+
+有效 二叉搜索树定义如下：
+
+节点的左子树只包含 小于 当前节点的数。
+节点的右子树只包含 大于 当前节点的数。
+所有左子树和右子树自身必须也是二叉搜索树。
+
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
+public:
+    bool isValidBST(TreeNode* root) {
+        if(!root) return true;
+        return bfs(root)[0];
+    }
+
+    vector<int> bfs(TreeNode* root){
+        vector<int> res{1, root->val, root->val};
+        if(root->left){
+            auto t = bfs(root->left);
+            if(!t[0] || t[2] >= root->val) res[0] = 0;
+            res[1] = min(t[1], res[1]);
+            res[2] = max(t[2], res[2]);
+        }
+        if(root->right){
+            auto t = bfs(root->right);
+            if(!t[0] || t[1] <= root->val) res[0] = 0;
+            res[1] = min(t[1], res[1]);
+            res[2] = max(t[2], res[2]);
+        }
+        return res;
+    }
+};
+```
+
+用一个数组存三个信息，一个是是否有问题，一个是最大值，一个是最小值，然后深搜即可。
+
+### 530. 二叉搜索树的最小绝对差
+
+https://leetcode.cn/problems/minimum-absolute-difference-in-bst/
+
+给你一个二叉搜索树的根节点 root ，返回 树中任意两不同节点值之间的最小差值 。
+
+差值是一个正数，其数值等于两值之差的绝对值。
+
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
+public:
+    bool is_first = true;
+    int res = INT_MAX, last;
+
+    int getMinimumDifference(TreeNode* root) {
+        dfs(root);
+        return res;
+    }
+
+    void dfs(TreeNode* root){
+        if(!root) return;
+        dfs(root->left);
+        if(is_first) is_first = false;
+        else res = min(res, root->val - last);
+        last = root->val;
+        dfs(root->right);
+    }
+};
+```
+
+深搜对比一下即可，首先如果是第一次进行深搜，此时没有 last ，将 is_first 置为 false，并写入 last 即可。通过中序遍历维护答案，
