@@ -1539,3 +1539,49 @@ public:
 ```
 
 左边为空，三种情况，右边为空一样的，两边都不为空，那么肯定一边一个返回根节点即可。
+
+### 450. 删除二叉搜索树中的节点
+
+https://leetcode.cn/problems/delete-node-in-a-bst/
+
+给定一个二叉搜索树的根节点 root 和一个值 key，删除二叉搜索树中的  key  对应的节点，并保证二叉搜索树的性质不变。返回二叉搜索树（有可能被更新）的根节点的引用。
+
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
+public:
+    TreeNode* deleteNode(TreeNode* root, int key) {
+        del(root, key);
+        return root;
+    }
+
+    void del(TreeNode* &root, int key){
+        if(!root) return;
+        if(root->val == key){
+            if(!root->left && !root->right) root = NULL;
+            else if(!root->left) root = root->right;
+            else if(!root->right) root = root->left;
+            else {
+                auto p = root->right;
+                while(p->left) p = p->left;
+                root->val = p->val;
+                del(root->right, p->val);
+            }
+        }
+        else if(root->val > key) del(root->left, key);
+        else del(root->right, key);
+    }
+};
+```
+
+分三种情况删除即可。
