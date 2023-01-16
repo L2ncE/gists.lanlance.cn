@@ -1506,3 +1506,36 @@ public:
 ```
 
 深搜对比一下即可，首先如果是第一次进行深搜，此时没有 last ，将 is_first 置为 false，并写入 last 即可。通过中序遍历维护答案，
+
+### 236. 二叉树的最近公共祖先
+
+https://leetcode.cn/problems/lowest-common-ancestor-of-a-binary-tree/
+
+给定一个二叉树, 找到该树中两个指定节点的最近公共祖先。
+
+百度百科中最近公共祖先的定义为：“对于有根树 T 的两个节点 p、q，最近公共祖先表示为一个节点 x，满足 x 是 p、q 的祖先且 x 的深度尽可能大（一个节点也可以是它自己的祖先）。”
+
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode(int x) : val(x), left(NULL), right(NULL) {}
+ * };
+ */
+class Solution {
+public:
+    TreeNode* lowestCommonAncestor(TreeNode* root, TreeNode* p, TreeNode* q) {
+        if(!root || root == p || root == q) return root;
+        auto left = lowestCommonAncestor(root->left, p, q);
+        auto right = lowestCommonAncestor(root->right, p, q);
+        if(!left) return right;
+        if(!right) return left;
+        return root;
+    }
+};
+```
+
+左边为空，三种情况，右边为空一样的，两边都不为空，那么肯定一边一个返回根节点即可。
