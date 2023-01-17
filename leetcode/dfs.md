@@ -227,3 +227,174 @@ public:
 ```
 
 异或运算直接用 `^= 32` 来切换大小写，爆搜即可。
+
+### 216. 组合总和 III
+
+https://leetcode.cn/problems/combination-sum-iii/
+
+找出所有相加之和为  n 的  k  个数的组合，且满足下列条件：
+
+只使用数字 1 到 9
+每个数字   最多使用一次  
+返回 所有可能的有效组合的列表 。该列表不能包含相同的组合两次，组合可以以任何顺序返回。
+
+```cpp
+class Solution {
+public:
+    vector<vector<int>> res;
+    vector<int> path;
+
+    vector<vector<int>> combinationSum3(int k, int n) {
+        dfs(n, k, 1);
+        return res;
+    }
+
+    void dfs(int n, int k, int start){
+        if(!n) {
+            if(!k) {
+                res.push_back(path);
+                return;
+            } else return;
+        } else if (k) {
+            for(int i = start; i <= 9; i++){
+                if(n >= i) {
+                    path.push_back(i);
+                    dfs(n - i, k - 1, i + 1);
+                    path.pop_back();
+                }
+            }
+        } else return;
+    }
+};
+```
+
+组合题必须有一个顺序，这里用 start 开始即可，注意每一层的条件判断。
+
+### 17. 电话号码的字母组合
+
+https://leetcode.cn/problems/letter-combinations-of-a-phone-number/
+
+给定一个仅包含数字  2-9  的字符串，返回所有它能表示的字母组合。答案可以按 任意顺序 返回。
+
+给出数字到字母的映射如下（与电话按键相同）。注意 1 不对应任何字母。
+
+```cpp
+class Solution {
+public:
+    vector<string> ans;
+    string strs[10] = {
+        "", "", "abc", "def",
+        "ghi", "jkl", "mno",
+        "pqrs", "tuv", "wxyz",
+    };
+    vector<string> letterCombinations(string digits) {
+        if(!digits.size()) return {};
+        dfs(digits, 0, "");
+        return ans;
+    }
+
+    void dfs(string &digits, int u, string path){
+        if(u == digits.size()) {
+            ans.push_back(path);
+            return;
+        }
+
+        for(auto c : strs[digits[u] - '0']) {
+            dfs(digits, u + 1, path + c);
+        }
+    }
+};
+```
+
+难点在于用一个数组来存储每一个数对应的字母。
+
+### 39. 组合总和
+
+https://leetcode.cn/problems/combination-sum/
+
+给你一个 无重复元素 的整数数组  candidates 和一个目标整数  target ，找出  candidates  中可以使数字和为目标数  target 的 所有   不同组合 ，并以列表形式返回。你可以按 任意顺序 返回这些组合。
+
+candidates 中的 同一个 数字可以 无限制重复被选取 。如果至少一个数字的被选数量不同，则两种组合是不同的。
+
+对于给定的输入，保证和为  target 的不同组合数少于 150 个。
+
+```cpp
+class Solution {
+public:
+    vector<vector<int>> res;
+    vector<int> path;
+
+    vector<vector<int>> combinationSum(vector<int>& candidates, int target) {
+        dfs(candidates, target, 0);
+        return res;
+    }
+
+    void dfs(vector<int>& candidates, int target, int u){
+        if(!target) {
+            res.push_back(path);
+            return;
+        }
+
+        if(u == candidates.size()) return;
+
+        for(int i = 0; target >= candidates[u] * i; i++){
+            dfs(candidates, target - candidates[u] * i, u + 1);
+            path.push_back(candidates[u]);
+        }
+
+        for(int i = 0; target >= candidates[u] * i; i++){
+            path.pop_back();
+        }
+    }
+};
+```
+
+第一个 for 循环中的 i 为这个数被选中的次数，第二次 for 循环恢复现场。
+
+### 40. 组合总和 II
+
+https://leetcode.cn/problems/combination-sum-ii/
+
+给定一个候选人编号的集合  candidates  和一个目标数  target ，找出  candidates  中所有可以使数字和为  target  的组合。
+
+candidates  中的每个数字在每个组合中只能使用   一次  。
+
+注意：解集不能包含重复的组合。
+
+```cpp
+class Solution {
+public:
+    vector<vector<int>> res;
+    vector<int> path;
+
+    vector<vector<int>> combinationSum2(vector<int>& candidates, int target) {
+        sort(candidates.begin(), candidates.end());
+        dfs(candidates, target, 0);
+        return res;
+    }
+
+    void dfs(vector<int>& candidates, int target, int u) {
+        if(!target) {
+            res.push_back(path);
+            return;
+        }
+
+        if(u == candidates.size()) return;
+
+        int k = u + 1;
+        while(k < candidates.size() && candidates[k] == candidates[u]) k++;
+        int cnt = k - u;
+
+        for(int i = 0; target >= candidates[u] * i && cnt >= i; i++){
+            dfs(candidates, target - candidates[u] * i, k);
+            path.push_back(candidates[u]);
+        }
+
+        for(int i = 0; target >= candidates[u] * i && cnt >= i; i++){
+            path.pop_back();
+        }
+    }
+};
+```
+
+这里 dfs 第二个参数为 k 实际上就是直接寻找到下个不同的数，因为在循环中已经会把相同的数考虑一遍了。
