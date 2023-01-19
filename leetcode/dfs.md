@@ -398,3 +398,111 @@ public:
 ```
 
 这里 dfs 第二个参数为 k 实际上就是直接寻找到下个不同的数，因为在循环中已经会把相同的数考虑一遍了。
+
+### 131. 分割回文串
+
+https://leetcode.cn/problems/palindrome-partitioning/
+
+```cpp
+class Solution {
+public:
+    vector<vector<bool>> f;
+    vector<vector<string>> ans;
+    vector<string> path;
+
+    vector<vector<string>> partition(string s) {
+        int n = s.size();
+        f = vector<vector<bool>>(n, vector<bool>(n));
+        for(int j = 0; j < n; j++){
+            for(int i = 0; i <= j; i++){
+                if(i == j) f[i][j] = true;
+                else if(s[i] == s[j]){
+                    if(f[i + 1][j - 1] || i + 1 > j - 1) f[i][j] = true;
+                }
+            }
+        }
+        dfs(s, 0);
+        return ans;
+    }
+
+    void dfs(string &s, int n){
+        if(n == s.size()) ans.push_back(path);
+        else{
+            for(int i = n; i < s.size(); i++){
+                if(f[n][i]) {
+                    path.push_back(s.substr(n, i - n + 1));
+                    dfs(s, i + 1);
+                    path.pop_back();
+                }
+            }
+        }
+    }
+};
+```
+
+这道题首先会通过 f 数组将所有组合是否是回文串存起来，接着进行爆搜即可。
+
+### 93. 复原 IP 地址
+
+https://leetcode.cn/problems/restore-ip-addresses/
+
+```cpp
+class Solution {
+public:
+    vector<string> ans;
+    vector<string> restoreIpAddresses(string s) {
+        dfs(s, 0, 0, "");
+        return ans;
+    }
+
+    void dfs(string &s, int u, int k, string path){
+        if(u == s.size()) {
+            if(k == 4) {
+                path.pop_back();
+                ans.push_back(path);
+            }
+            return;
+        }
+
+        if(k == 4) return;
+
+        for(int i = u, t = 0; i < s.size(); i++) {
+            if(i > u && s[u] == '0') break;
+            t = t * 10 + s[i] - '0';
+            if(t <= 255) dfs(s, i + 1, k + 1, path + to_string(t) + ".");
+            else break;
+        }
+    }
+};
+```
+
+掌握 IP 的规则进行暴搜即可。
+
+### 78. 子集
+
+https://leetcode.cn/problems/subsets/
+
+```cpp
+class Solution {
+public:
+    vector<vector<int>> ans;
+    vector<int> path;
+    vector<vector<int>> subsets(vector<int>& nums) {
+        dfs(nums, 0);
+        return ans;
+    }
+
+    void dfs(vector<int>& nums, int n){
+        if(n <= nums.size()) ans.push_back(path);
+        if(n > nums.size()) return;
+
+        for(int i = n; i < nums.size(); i++){
+            path.push_back(nums[i]);
+            dfs(nums, i + 1);
+            path.pop_back();
+        }
+    }
+};
+```
+
+如果 u 当前数字小于 nums.size() 长度，那么就保存进结果数组，如果大于的话，直接返回; i = u 开始，i < nums.size(); 递归调用下一个 dfs(i+1)。
