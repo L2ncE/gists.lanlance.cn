@@ -482,6 +482,10 @@ public:
 
 https://leetcode.cn/problems/subsets/
 
+给你一个整数数组 nums ，数组中的元素 互不相同 。返回该数组所有可能的子集（幂集）。
+
+解集 不能 包含重复的子集。你可以按 任意顺序 返回解集。
+
 ```cpp
 class Solution {
 public:
@@ -506,3 +510,122 @@ public:
 ```
 
 如果 u 当前数字小于 nums.size() 长度，那么就保存进结果数组，如果大于的话，直接返回; i = u 开始，i < nums.size(); 递归调用下一个 dfs(i+1)。
+
+### 90. 子集 II
+
+https://leetcode.cn/problems/subsets-ii/
+
+给你一个整数数组 nums ，其中可能包含重复元素，请你返回该数组所有可能的子集（幂集）。
+
+解集 不能 包含重复的子集。返回的解集中，子集可以按 任意顺序 排列。
+
+```cpp
+class Solution {
+public:
+    vector<vector<int>> ans;
+    vector<int> path;
+
+    vector<vector<int>> subsetsWithDup(vector<int>& nums) {
+        sort(nums.begin(), nums.end());
+        dfs(nums, 0);
+        return ans;
+    }
+
+    void dfs(vector<int>& nums, int u) {
+        if(u == nums.size()) {
+            ans.push_back(path);
+            return;
+        }
+        int k = u;
+        while(k < nums.size() && nums[k] == nums[u]) k++;
+        dfs(nums, k);
+        for(int i = u; i < k; i++) {
+            path.push_back(nums[i]);
+            dfs(nums, k);
+        }
+        for(int i = u; i < k; i++) path.pop_back();
+    }
+};
+```
+
+与上题不同的是本题可以包含重复元素，为了方便处理，我们先将数组排序，这样相同元素就会排在一起。然后暴力搜索所有方案，搜索顺序是这样的：我们先枚举每个不同的数，枚举到数 xx 时，我们再求出 xx 的个数 kk，然后我们枚举在集合中放入 0,1,2,…k0,1,2,…k 个 xx，共 k+1k+1 种情况。当枚举完最后一个数时，表示我们已经选定了一个集合，将该集合加入答案中即可。
+
+### 491. 递增子序列
+
+https://leetcode.cn/problems/non-decreasing-subsequences/
+
+给你一个整数数组 nums ，找出并返回所有该数组中不同的递增子序列，递增子序列中 至少有两个元素 。你可以按 任意顺序 返回答案。
+
+数组中可能含有重复元素，如出现两个整数相等，也可以视作递增序列的一种特殊情况。
+
+```cpp
+class Solution {
+public:
+    vector<vector<int>> ans;
+    vector<int> path;
+
+    vector<vector<int>> findSubsequences(vector<int>& nums) {
+        dfs(nums, 0);
+        return ans;
+    }
+
+    void dfs(vector<int>& nums, int u) {
+        if(path.size() >= 2) ans.push_back(path);
+        if(u == nums.size()) return;
+
+        unordered_set<int> S;
+        for(int i = u; i < nums.size(); i++){
+            if(path.empty() || path.back() <= nums[i]){
+                if(S.count(nums[i])) continue;
+                S.insert(nums[i]);
+                path.push_back(nums[i]);
+                dfs(nums, i + 1);
+                path.pop_back();
+            }
+        }
+    }
+};
+```
+
+### 47. 全排列 II
+
+https://leetcode.cn/problems/permutations-ii/
+
+给定一个可包含重复数字的序列 nums ，按任意顺序 返回所有不重复的全排列。
+
+```cpp
+class Solution {
+public:
+    vector<vector<int>> ans;
+    vector<int> path;
+    vector<bool> st;
+    vector<vector<int>> permuteUnique(vector<int>& nums) {
+        st = vector<bool>(nums.size());
+        dfs(nums, 0);
+        return ans;
+    }
+
+    void dfs(vector<int>& nums, int u) {
+        if(u == nums.size()) {
+            ans.push_back(path);
+            return;
+        }
+
+        unordered_set<int> S;
+
+        for(int i = 0; i < nums.size(); i++){
+            if(!st[i]) {
+                if(S.count(nums[i])) continue;
+                S.insert(nums[i]);
+                st[i] = true;
+                path.push_back(nums[i]);
+                dfs(nums, u + 1);
+                st[i] = false;
+                path.pop_back();
+            }
+        }
+    }
+};
+```
+
+用一个哈希集合来进行判重即可。
