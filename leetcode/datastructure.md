@@ -417,6 +417,37 @@ public:
 
 画图才能解决，这道题比较绕，简单说就是到相遇点之后，让一个指针回 head 那个位置，然后两个指针以相同的速度重新跑，最后相遇点就是我们的答案。
 
+```cpp
+/**
+ * Definition for singly-linked list.
+ * struct ListNode {
+ *     int val;
+ *     ListNode *next;
+ *     ListNode(int x) : val(x), next(NULL) {}
+ * };
+ */
+class Solution {
+public:
+    ListNode *detectCycle(ListNode *head) {
+        auto p = head, q = head;
+        while(q && q->next){
+            p = p->next;
+            q = q->next->next;
+            if(p == q) break;
+        }
+        if(!q || !q->next) return NULL;
+        p = head;
+        while(p != q){
+            p = p->next;
+            q = q->next;
+        }
+        return p;
+    }
+};
+```
+
+更好的代码，可以看到，当快慢指针相遇时，让其中任一个指针指向头节点，然后让它俩以相同速度前进，再次相遇时所在的节点位置就是环开始的位置。
+
 ### 232. 用栈实现队列
 
 https://leetcode.cn/problems/implement-queue-using-stacks/
@@ -1585,3 +1616,87 @@ public:
 ```
 
 分三种情况删除即可。
+
+### 86. 分隔链表
+
+https://leetcode.cn/problems/partition-list/
+
+给你一个链表的头节点 head 和一个特定值 x ，请你对链表进行分隔，使得所有 小于 x 的节点都出现在 大于或等于 x 的节点之前。
+
+你应当 保留 两个分区中每个节点的初始相对位置。
+
+```cpp
+/**
+ * Definition for singly-linked list.
+ * struct ListNode {
+ *     int val;
+ *     ListNode *next;
+ *     ListNode() : val(0), next(nullptr) {}
+ *     ListNode(int x) : val(x), next(nullptr) {}
+ *     ListNode(int x, ListNode *next) : val(x), next(next) {}
+ * };
+ */
+class Solution {
+public:
+    ListNode* partition(ListNode* head, int x) {
+        auto dummy1 = new ListNode(), dummy2 = new ListNode();
+        auto p1 = dummy1, p2 = dummy2;
+
+        while(head){
+            if(head->val >= x) p2 = p2->next = head;
+            else p1 = p1->next = head;
+            head = head->next;
+        }
+        p2->next = NULL;
+        p1->next = dummy2->next;
+        return dummy1->next;
+    }
+};
+```
+
+与合并链表类似，这里需要创建两个虚拟头结点，除此之外我们需要在最后通过 p2->next = NULL 来切断他后面的指向。
+
+### 23. 合并 K 个升序链表
+
+https://leetcode.cn/problems/merge-k-sorted-lists/
+
+给你一个链表数组，每个链表都已经按升序排列。
+
+请你将所有链表合并到一个升序链表中，返回合并后的链表。
+
+```cpp
+/**
+ * Definition for singly-linked list.
+ * struct ListNode {
+ *     int val;
+ *     ListNode *next;
+ *     ListNode() : val(0), next(nullptr) {}
+ *     ListNode(int x) : val(x), next(nullptr) {}
+ *     ListNode(int x, ListNode *next) : val(x), next(next) {}
+ * };
+ */
+class Solution {
+public:
+    struct Cmp {
+        bool operator()(ListNode* a, ListNode* b) {
+            return a->val > b->val;
+        }
+    };
+
+    ListNode* mergeKLists(vector<ListNode*>& lists) {
+        auto dummy = new ListNode(), p = dummy;
+        priority_queue<ListNode*, vector<ListNode*>, Cmp> heap;
+        for(auto h : lists) if(h) heap.push(h);
+
+        while(heap.size()) {
+            auto t = heap.top();
+            heap.pop();
+            p = p->next = t;
+            if(t->next) heap.push(t->next);
+        }
+        return dummy->next;
+    }
+};
+```
+
+通过一个优先队列小根堆来实现，其中我们需要有一个 Cmp 比较函数，背过即可。
