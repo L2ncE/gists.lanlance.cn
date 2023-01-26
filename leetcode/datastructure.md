@@ -181,6 +181,37 @@ public:
 
 如果值相同就跳到下下个结点，相当于把值进行了删除。
 
+```cpp
+/**
+ * Definition for singly-linked list.
+ * struct ListNode {
+ *     int val;
+ *     ListNode *next;
+ *     ListNode() : val(0), next(nullptr) {}
+ *     ListNode(int x) : val(x), next(nullptr) {}
+ *     ListNode(int x, ListNode *next) : val(x), next(next) {}
+ * };
+ */
+class Solution {
+public:
+    ListNode* deleteDuplicates(ListNode* head) {
+        if(!head) return head;
+        auto fast = head, slow = head;
+        while(fast) {
+            if(fast->val != slow->val) {
+                slow->next = fast;
+                slow = slow->next;
+            }
+            fast = fast->next;
+        }
+        slow->next = NULL;
+        return head;
+    }
+};
+```
+
+更清晰的写法，使用快慢指针，若值不同时将慢指针的下一位指向快指针即可。
+
 ### 20. 有效的括号
 
 https://leetcode.cn/problems/valid-parentheses/

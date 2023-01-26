@@ -425,6 +425,24 @@ public:
 
 一个指在前面一个指在后面，经典双指针问题。注意特判 i = 0 的情况。
 
+```cpp
+class Solution {
+public:
+    int removeDuplicates(vector<int>& nums) {
+        int j = 0;
+        for(int i = 0; i < nums.size(); i++){
+            if(nums[i] != nums[j]){
+                j++;
+                nums[j] = nums[i];
+            }
+        }
+        return j + 1;
+    }
+};
+```
+
+更好的快慢指针做法，更加直观。
+
 ### 844. 比较含退格的字符串
 
 https://leetcode.cn/problems/backspace-string-compare/
@@ -688,3 +706,36 @@ public:
 ```
 
 将每一个单词都放到前面，一个指针指向原本的字符串，另外一个指向最后成为结果的字符串。注意找到一个单词就要将其翻转。
+
+### 5. 最长回文子串
+
+https://leetcode.cn/problems/longest-palindromic-substring/
+
+给你一个字符串 s，找到 s 中最长的回文子串。
+
+如果字符串的反序与原始字符串相同，则该字符串称为回文字符串。
+
+```cpp
+class Solution {
+public:
+    string longestPalindrome(string s) {
+        string res = "";
+        for(int i = 0; i < s.size(); i++){
+            string s1 = getPalindrome(s, i, i);
+            string s2 = getPalindrome(s, i, i + 1);
+            res = s1.size() > res.size() ? s1 : res;
+            res = s2.size() > res.size() ? s2 : res;
+        }
+        return res;
+    }
+
+    string getPalindrome(string s, int l, int r){
+        while(l >= 0 && r < s.size() && s[l] == s[r]){
+            l--, r++;
+        }
+        return s.substr(l + 1, r - l - 1);
+    }
+};
+```
+
+这道题难点在于需要从中间向外来走，还要考虑是奇数还是偶数的情况，注意 `substr` 时的边界问题。
