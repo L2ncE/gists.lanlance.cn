@@ -978,6 +978,40 @@ public:
 
 一样的宽搜，每一层给结果加一即可。
 
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
+public:
+    int res = 0;
+    int depth = 0;
+    int maxDepth(TreeNode* root) {
+        dfs(root);
+        return res;
+    }
+
+    void dfs(TreeNode* root){
+        if(!root) return;
+        depth++;
+        if(!root->left && !root->right) res = max(res, depth);
+        dfs(root->left);
+        dfs(root->right);
+        depth--;
+    }
+};
+```
+
+用迭代的方法做，更有普遍性。
+
 ### 111. 二叉树的最小深度
 
 https://leetcode.cn/problems/minimum-depth-of-binary-tree/
@@ -1731,3 +1765,42 @@ public:
 ```
 
 通过一个优先队列小根堆来实现，其中我们需要有一个 Cmp 比较函数，背过即可。
+
+### 543. 二叉树的直径
+
+https://leetcode.cn/problems/diameter-of-binary-tree/
+
+给定一棵二叉树，你需要计算它的直径长度。一棵二叉树的直径长度是任意两个结点路径长度中的最大值。这条路径可能穿过也可能不穿过根结点。
+
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
+public:
+    int res = 0;
+    int diameterOfBinaryTree(TreeNode* root) {
+        dfs(root);
+        return res;
+    }
+
+    int dfs(TreeNode* root) {
+        if(!root) return 0;
+        int l = dfs(root->left);
+        int r = dfs(root->right);
+        res = max(res, l + r);
+        return max(l, r) + 1;
+    }
+};
+```
+
+前序位置无法获取子树信息，所以只能让每个节点调用 dfs 函数去算子树的深度。
+我们应该把计算「直径」的逻辑放在后序位置，准确说应该是放在 dfs 的后序位置，因为 dfs 的后序位置是知道左右子树的最大深度的。

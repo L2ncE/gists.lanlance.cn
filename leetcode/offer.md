@@ -323,3 +323,32 @@ public:
 ```
 
 和上一题是同样的思路，使用快慢指针即可。
+
+### 剑指 Offer 55 - I. 二叉树的深度
+
+https://leetcode.cn/problems/er-cha-shu-de-shen-du-lcof/
+
+输入一棵二叉树的根节点，求该树的深度。从根节点到叶节点依次经过的节点（含根、叶节点）形成树的一条路径，最长路径的长度为树的深度。
+
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode(int x) : val(x), left(NULL), right(NULL) {}
+ * };
+ */
+class Solution {
+public:
+    int maxDepth(TreeNode* root) {
+        if(!root) return 0;
+        int l = maxDepth(root->left);
+        int r = maxDepth(root->right);
+        return max(l, r) + 1;
+    }
+};
+```
+
+分解成找左右子树的深度即可，比传统的 dfs 更简单。
