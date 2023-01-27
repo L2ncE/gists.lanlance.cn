@@ -144,3 +144,58 @@ public:
 ```
 
 需要注意的是最后一行不要算，所以 `i = triangle.size()` 。
+
+### 509. 斐波那契数
+
+https://leetcode.cn/problems/fibonacci-number/
+
+斐波那契数 （通常用 F(n) 表示）形成的序列称为 斐波那契数列 。该数列由 0 和 1 开始，后面的每一项数字都是前面两项数字的和
+
+```cpp
+class Solution {
+public:
+    int fib(int n) {
+        if(n == 0 || n == 1) return n;
+        int dp_a = 0, dp_b = 1;
+        for(int i = 2; i <= n; i++) {
+            int dp_i = dp_a + dp_b;
+            dp_a = dp_b;
+            dp_b = dp_i;
+        }
+        return dp_b;
+    }
+};
+```
+
+此题用到了动态规划的思想，用到了状态转移方程，在最后使用滚动更新减少空间复杂度。
+
+### 322. 零钱兑换
+
+https://leetcode.cn/problems/coin-change/
+
+给你一个整数数组 coins ，表示不同面额的硬币；以及一个整数 amount ，表示总金额。
+
+计算并返回可以凑成总金额所需的 最少的硬币个数 。如果没有任何一种硬币组合能组成总金额，返回  -1 。
+
+你可以认为每种硬币的数量是无限的。
+
+```cpp
+class Solution {
+public:
+    int coinChange(vector<int>& coins, int amount) {
+        vector<int> dp(amount + 1, amount + 1);
+        dp[0] = 0;
+        for(int i = 0; i < dp.size(); i++) {
+            for(int coin : coins) {
+                if(i - coin < 0) continue;
+                dp[i] = min(dp[i], 1 + dp[i - coin]);
+            }
+        }
+        return dp[amount] == amount + 1 ? -1 : dp[amount];
+    }
+};
+```
+
+目标金额作为变量。不过 dp 函数体现在函数参数，而 dp 数组体现在数组索引
+
+dp 数组的定义：当目标金额为 i 时，至少需要 dp[i] 枚硬币凑出。
