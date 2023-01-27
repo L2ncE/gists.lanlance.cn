@@ -352,3 +352,28 @@ public:
 ```
 
 分解成找左右子树的深度即可，比传统的 dfs 更简单。
+
+### 剑指 Offer II 103. 最少的硬币数目
+
+https://leetcode.cn/problems/gaM7Ch/
+
+给定不同面额的硬币 coins 和一个总金额 amount。编写一个函数来计算可以凑成总金额所需的最少的硬币个数。如果没有任何一种硬币组合能组成总金额，返回  -1。
+
+```cpp
+class Solution {
+public:
+    int coinChange(vector<int>& coins, int amount) {
+        vector<int> dp(amount + 1, amount + 1);
+        dp[0] = 0;
+        for(int i = 0; i < dp.size(); i++){
+            for(int coin : coins) {
+                if(i - coin < 0) continue;
+                dp[i] = min(dp[i], dp[i - coin] + 1);
+            }
+        }
+        return dp[amount] == amount + 1 ? -1 : dp[amount];
+    }
+};
+```
+
+动态规划题，这里是自底向上的迭代方法来完成。
