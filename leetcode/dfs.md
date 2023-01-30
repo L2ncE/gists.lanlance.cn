@@ -157,6 +157,32 @@ public:
 
 递归一下即可。
 
+```cpp
+class Solution {
+public:
+    vector<vector<int>> res;
+    vector<int> path;
+    vector<vector<int>> combine(int n, int k) {
+        dfs(n, k, 1);
+        return res;
+    }
+    void dfs(int n, int k, int start){
+        if(path.size() == k) {
+            res.push_back(path);
+            return;
+        }
+
+        for(int i = start; i <= n; i++) {
+            path.push_back(i);
+            dfs(n, k, i + 1);
+            path.pop_back();
+        }
+    }
+};
+```
+
+更易懂的写法。
+
 ### 46. 全排列
 
 https://leetcode.cn/problems/permutations
@@ -351,6 +377,35 @@ public:
 
 第一个 for 循环中的 i 为这个数被选中的次数，第二次 for 循环恢复现场。
 
+```cpp
+class Solution {
+public:
+    vector<vector<int>> ans;
+    vector<int> path;
+    vector<vector<int>> combinationSum(vector<int>& nums, int target) {
+        dfs(nums, target, 0);
+        return ans;
+    }
+
+    void dfs(vector<int>& nums, int target, int u) {
+        if(!target) {
+            ans.push_back(path);
+            return;
+        }else if(target < 0) return;
+
+        for(int i = u; i < nums.size(); i++) {
+            target -= nums[i];
+            path.push_back(nums[i]);
+            dfs(nums, target, i);
+            target += nums[i];
+            path.pop_back();
+        }
+    }
+};
+```
+
+更好的解法，每次递归时的 i + 1 改成 i，相当于给树多加了一条分支。
+
 ### 40. 组合总和 II
 
 https://leetcode.cn/problems/combination-sum-ii/
@@ -398,6 +453,39 @@ public:
 ```
 
 这里 dfs 第二个参数为 k 实际上就是直接寻找到下个不同的数，因为在循环中已经会把相同的数考虑一遍了。
+
+```cpp
+class Solution {
+public:
+    vector<vector<int>> res;
+    vector<int> path;
+
+    vector<vector<int>> combinationSum2(vector<int>& candidates, int target) {
+        sort(candidates.begin(), candidates.end());
+        dfs(candidates, target, 0);
+        return res;
+    }
+
+    void dfs(vector<int>& candidates, int target, int u) {
+        if(!target) {
+            res.push_back(path);
+            return;
+        } else if(target < 0) return;
+
+        for(int i = u; i < candidates.size(); i++){
+            if(i > u && candidates[i] == candidates[i - 1]) continue;
+            path.push_back(candidates[i]);
+            target -= candidates[i];
+            dfs(candidates, target, i + 1);
+            path.pop_back();
+            target += candidates[i];
+        }
+
+    }
+};
+```
+
+更好的做法，通过剪枝优化。
 
 ### 131. 分割回文串
 
@@ -548,7 +636,34 @@ public:
 };
 ```
 
-与上题不同的是本题可以包含重复元素，为了方便处理，我们先将数组排序，这样相同元素就会排在一起。然后暴力搜索所有方案，搜索顺序是这样的：我们先枚举每个不同的数，枚举到数 xx 时，我们再求出 xx 的个数 kk，然后我们枚举在集合中放入 0,1,2,…k0,1,2,…k 个 xx，共 k+1k+1 种情况。当枚举完最后一个数时，表示我们已经选定了一个集合，将该集合加入答案中即可。
+与上题不同的是本题可以包含重复元素，为了方便处理，我们先将数组排序，这样相同元素就会排在一起。然后暴力搜索所有方案，搜索顺序是这样的：我们先枚举每个不同的数，枚举到数 x 时，我们再求出 x 的个数 k，然后我们枚举在集合中放入 0,1,2,…k 个 x，共 k + 1 种情况。当枚举完最后一个数时，表示我们已经选定了一个集合，将该集合加入答案中即可。
+
+```cpp
+class Solution {
+public:
+    vector<vector<int>> ans;
+    vector<int> path;
+
+    vector<vector<int>> subsetsWithDup(vector<int>& nums) {
+        sort(nums.begin(), nums.end());
+        dfs(nums, 0);
+        return ans;
+    }
+
+    void dfs(vector<int>& nums, int u) {
+        ans.push_back(path);
+
+        for(int i = u; i < nums.size(); i++) {
+            if(i > u && nums[i] == nums[i - 1]) continue;
+            path.push_back(nums[i]);
+            dfs(nums, i + 1);
+            path.pop_back();
+        }
+    }
+};
+```
+
+更好理解的做法，通过剪枝来进行优化。
 
 ### 491. 递增子序列
 

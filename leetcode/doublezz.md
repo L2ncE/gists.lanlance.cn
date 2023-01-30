@@ -344,6 +344,37 @@ public:
 
 用两个哈希表进行维护，最后比较两个哈希表相同的“柱子数”是否为 h1 的总长度即可。
 
+```cpp
+class Solution {
+public:
+    bool checkInclusion(string s1, string s2) {
+        unordered_map<char, int> need, win;
+        for(auto c : s1) need[c]++;
+        int left = 0, right = 0, vl = 0;
+        while(right < s2.size()) {
+            char c1 = s2[right];
+            right++;
+            if(need.count(c1)) {
+                win[c1]++;
+                if(win[c1] == need[c1]) vl++;
+            }
+            while(vl == need.size()) {
+                if(right - left == s1.size()) return true;
+                char c2 = s2[left];
+                left++;
+                if(need.count(c2)) {
+                    if(win[c2] == need[c2]) vl--;
+                    win[c2]--;
+                }
+            }
+        }
+        return false;
+    }
+};
+```
+
+套模板即可，当窗口长度为 s1 的长度且有效位数符合时就可以返回 true。
+
 ### 27. 移除元素
 
 https://leetcode.cn/problems/remove-element/
@@ -566,6 +597,41 @@ public:
 
 用两个哈希表和一个 cnt 进行维护，经典滑动窗口。
 
+```cpp
+class Solution {
+public:
+    string minWindow(string s, string t) {
+        unordered_map<char, int> need, win;
+        for(auto c : t) need[c]++;
+        int left = 0, right = 0, vl = 0, st = 0, len = INT_MAX;
+        while(right < s.size()) {
+            char c1 = s[right];
+            right++;
+            if(need.count(c1)) {
+                win[c1]++;
+                if(win[c1] == need[c1]) vl++;
+            }
+
+            while(vl == need.size()) {
+                if(right - left < len) {
+                    st = left;
+                    len = right - left;
+                }
+                char c2 = s[left];
+                left++;
+                if(need.count(c2)) {
+                    if(win[c2] == need[c2]) vl--;
+                    win[c2]--;
+                }
+            }
+        }
+        return len == INT_MAX ? "" : s.substr(st, len);
+    }
+};
+```
+
+更好的做法，可作为滑动窗口模板。
+
 ### 202. 快乐数
 
 https://leetcode.cn/problems/happy-number/
@@ -739,3 +805,43 @@ public:
 ```
 
 这道题难点在于需要从中间向外来走，还要考虑是奇数还是偶数的情况，注意 `substr` 时的边界问题。
+
+### 438. 找到字符串中所有字母异位词
+
+https://leetcode.cn/problems/find-all-anagrams-in-a-string/
+
+给定两个字符串  s  和 p，找到  s  中所有  p  的   异位词   的子串，返回这些子串的起始索引。不考虑答案输出的顺序。
+
+异位词 指由相同字母重排列形成的字符串（包括相同的字符串）。
+
+```cpp
+class Solution {
+public:
+    vector<int> findAnagrams(string s, string p) {
+        vector<int> res;
+        unordered_map<char, int> need, win;
+        for(auto c : p) need[c]++;
+        int right = 0, left = 0, vl = 0;
+        while(right < s.size()) {
+            char c1 = s[right];
+            right++;
+            if(need.count(c1)) {
+                win[c1]++;
+                if(win[c1] == need[c1]) vl++;
+            }
+            while(right - left >= p.size()) {
+                if(vl == need.size()) res.push_back(left);
+                char c2 = s[left];
+                left++;
+                if(need.count(c2)) {
+                    if(win[c2] == need[c2]) vl--;
+                    win[c2]--;
+                }
+            }
+        }
+        return res;
+    }
+};
+```
+
+按照模板写即可，值得一提的是这里处理缩小的时候和模板有所不同，根据题型自行适配。

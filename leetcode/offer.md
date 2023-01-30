@@ -377,3 +377,265 @@ public:
 ```
 
 动态规划题，这里是自底向上的迭代方法来完成。
+
+### 剑指 Offer II 083. 没有重复元素集合的全排列
+
+https://leetcode.cn/problems/VvJkup/
+
+给定一个不含重复数字的整数数组 nums ，返回其 所有可能的全排列 。可以 按任意顺序 返回答案。
+
+```cpp
+class Solution {
+public:
+    vector<vector<int>> ans;
+    vector<int> path;
+    vector<bool> st;
+    vector<vector<int>> permute(vector<int>& nums) {
+        st = vector<bool>(nums.size());
+        dfs(nums, 0);
+        return ans;
+    }
+
+    void dfs(vector<int>& nums, int u) {
+        if(u == nums.size()) {
+            ans.push_back(path);
+            return;
+        }
+
+        for(int i = 0; i < nums.size(); i++) {
+            if(!st[i]) {
+                st[i] = true;
+                path.push_back(nums[i]);
+                dfs(nums, u + 1);
+                st[i] = false;
+                path.pop_back();
+            }
+        }
+    }
+};
+```
+
+经典回溯问题，用一个存答案，一个存状态，其他的就是经典模版。
+
+### 剑指 Offer 53 - I. 在排序数组中查找数字 I
+
+https://leetcode.cn/problems/zai-pai-xu-shu-zu-zhong-cha-zhao-shu-zi-lcof/
+
+统计一个数字在排序数组中出现的次数。
+
+```cpp
+class Solution {
+public:
+    int search(vector<int>& nums, int target) {
+        if(!nums.size()) return 0;
+        int i, j;
+        int l = 0, r = nums.size() - 1;
+        while(l < r) {
+            int mid = l + r >> 1;
+            if(nums[mid] >= target) r = mid;
+            else l = mid + 1;
+        }
+        if(nums[r] != target) return 0;
+        i = r;
+        l = 0, r = nums.size() - 1;
+        while(l < r) {
+            int mid = l + r + 1>> 1;
+            if(nums[mid] <= target) l = mid;
+            else r = mid - 1;
+        }
+        if(nums[l] != target) return 0;
+        j = l;
+        return j - i + 1;
+    }
+};
+```
+
+用二分分别算左右两边数字的下标，最后算差值即可。
+
+### 剑指 Offer II 079. 所有子集
+
+https://leetcode.cn/problems/TVdhkn/
+
+给定一个整数数组 nums ，数组中的元素 互不相同 。返回该数组所有可能的子集（幂集）。
+
+解集 不能 包含重复的子集。你可以按 任意顺序 返回解集。
+
+```cpp
+class Solution {
+public:
+    vector<vector<int>> ans;
+    vector<int> path;
+    vector<vector<int>> subsets(vector<int>& nums) {
+        dfs(nums, 0);
+        return ans;
+    }
+
+    void dfs(vector<int>& nums, int u) {
+        if(u == nums.size()) {
+            ans.push_back(path);
+            return;
+        } else if(u < nums.size()) ans.push_back(path);
+        else return;
+
+        for(int i = u; i < nums.size(); i++) {
+            path.push_back(nums[i]);
+            dfs(nums, i + 1);
+            path.pop_back();
+        }
+    }
+};
+```
+
+注意退出的条件判断。
+
+### 剑指 Offer II 080. 含有 k 个元素的组合
+
+https://leetcode.cn/problems/uUsW3B/
+
+```cpp
+class Solution {
+public:
+    vector<vector<int>> ans;
+    vector<int> path;
+    vector<vector<int>> combine(int n, int k) {
+        dfs(n, k, 1);
+        return ans;
+    }
+
+    void dfs(int n, int k, int u) {
+        if(path.size() == k) {
+            ans.push_back(path);
+            return;
+        }
+
+        for(int i = u; i <= n; i++) {
+            path.push_back(i);
+            dfs(n, k, i + 1);
+            path.pop_back();
+        }
+    }
+};
+```
+
+和上一题类似，不过只需要找一层的即可。
+
+### 剑指 Offer II 081. 允许重复选择元素的组合
+
+https://leetcode.cn/problems/Ygoe9J/
+
+给定一个无重复元素的正整数数组  candidates  和一个正整数  target ，找出  candidates  中所有可以使数字和为目标数  target  的唯一组合。
+
+candidates  中的数字可以无限制重复被选取。如果至少一个所选数字数量不同，则两种组合是不同的。
+
+对于给定的输入，保证和为  target 的唯一组合数少于 150 个。
+
+```cpp
+class Solution {
+public:
+    vector<vector<int>> ans;
+    vector<int> path;
+    vector<vector<int>> combinationSum(vector<int>& candidates, int target) {
+        dfs(candidates, target, 0);
+        return ans;
+    }
+
+    void dfs(vector<int>& nums, int target, int u) {
+        if(!target) {
+            ans.push_back(path);
+            return;
+        } else if(target < 0) return;
+
+        for(int i = u; i < nums.size(); i++) {
+            path.push_back(nums[i]);
+            target -= nums[i];
+            dfs(nums, target, i);
+            path.pop_back();
+            target += nums[i];
+        }
+    }
+};
+```
+
+因为数字可以重复用，所以以往的 i + 1 在这里变成 i 就行了。
+
+### 剑指 Offer II 082. 含有重复元素集合的组合
+
+https://leetcode.cn/problems/4sjJUc/
+
+给定一个可能有重复数字的整数数组  candidates  和一个目标数  target ，找出  candidates  中所有可以使数字和为  target  的组合。
+
+candidates  中的每个数字在每个组合中只能使用一次，解集不能包含重复的组合。
+
+```cpp
+class Solution {
+public:
+    vector<vector<int>> ans;
+    vector<int> path;
+    vector<vector<int>> combinationSum2(vector<int>& candidates, int target) {
+        sort(candidates.begin(), candidates.end());
+        dfs(candidates, target, 0);
+        return ans;
+    }
+
+    void dfs(vector<int>& nums, int target, int u) {
+        if(!target) {
+            ans.push_back(path);
+            return;
+        } else if(target < 0) return;
+
+        for(int i = u; i < nums.size(); i++) {
+            if(i > u && nums[i] == nums[i - 1]) continue;
+            path.push_back(nums[i]);
+            target -= nums[i];
+            dfs(nums, target, i + 1);
+            path.pop_back();
+            target += nums[i];
+        }
+    }
+};
+```
+
+和上一题不一样的点在于这里需要剪枝优化，把一样数字的给剪掉。
+
+### 剑指 Offer II 084. 含有重复元素集合的全排列
+
+https://leetcode.cn/problems/7p8L0Z/
+
+给定一个可包含重复数字的整数集合 nums ，按任意顺序 返回它所有不重复的全排列。
+
+```cpp
+class Solution {
+public:
+    vector<vector<int>> ans;
+    vector<int> path;
+    vector<bool> st;
+    vector<vector<int>> permuteUnique(vector<int>& nums) {
+        st = vector<bool>(nums.size());
+        dfs(nums, 0);
+        return ans;
+    }
+
+    void dfs(vector<int>& nums, int u) {
+        if(u == nums.size()) {
+            ans.push_back(path);
+            return;
+        }
+
+        unordered_set<int> S;
+
+        for(int i = 0; i < nums.size(); i++) {
+            if(!st[i]) {
+                if(S.count(nums[i])) continue;
+                S.insert(nums[i]);
+                path.push_back(nums[i]);
+                st[i] = true;
+                dfs(nums, u + 1);
+                path.pop_back();
+                st[i] = false;
+            }
+        }
+    }
+};
+```
+
+用了一个哈希集合来存是否有重复使用来进行剪枝。
