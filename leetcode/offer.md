@@ -639,3 +639,146 @@ public:
 ```
 
 用了一个哈希集合来存是否有重复使用来进行剪枝。
+
+### 剑指 Offer II 014. 字符串中的变位词
+
+https://leetcode.cn/problems/MPnaiL/
+
+给定两个字符串 s1 和 s2，写一个函数来判断 s2 是否包含 s1 的某个变位词。
+
+换句话说，第一个字符串的排列之一是第二个字符串的 子串 。
+
+```cpp
+class Solution {
+public:
+    bool checkInclusion(string s1, string s2) {
+        unordered_map<char, int> need, win;
+        for(auto c : s1) need[c]++;
+        int right = 0, left = 0, vl = 0;
+        while(right < s2.size()) {
+            char c1 = s2[right++];
+            if(need.count(c1)) {
+                win[c1]++;
+                if(win[c1] == need[c1]) vl++;
+            }
+            while(vl == need.size()) {
+                if(right - left == s1.size()) return true;
+                char c2 = s2[left++];
+                if(need.count(c2)) {
+                    if(win[c2] == need[c2]) vl--;
+                    win[c2]--;
+                }
+            }
+        }
+        return false;
+    }
+};
+```
+
+滑动窗口问题，当有效位与需要的字符相同并且长度和 s1 相同是返回 true。
+
+### 剑指 Offer II 015. 字符串中的所有变位词
+
+https://leetcode.cn/problems/VabMRr/
+
+给定两个字符串  s  和  p，找到  s  中所有 p 的   变位词   的子串，返回这些子串的起始索引。不考虑答案输出的顺序。
+
+变位词 指字母相同，但排列不同的字符串。
+
+```cpp
+class Solution {
+public:
+    vector<int> findAnagrams(string s, string p) {
+        vector<int> res;
+        unordered_map<char, int> need, win;
+        for(auto c : p) need[c]++;
+        int right = 0, left = 0, vl = 0;
+        while(right < s.size()) {
+            char c1 = s[right++];
+            if(need.count(c1)) {
+                win[c1]++;
+                if(win[c1] == need[c1]) vl++;
+            }
+            while(right - left >= p.size()) {
+                if(vl == need.size()) res.push_back(left);
+                char c2 = s[left++];
+                if(need.count(c2)) {
+                    if(win[c2] == need[c2]) vl--;
+                    win[c2]--;
+                }
+            }
+        }
+        return res;
+    }
+};
+```
+
+滑动窗口题，与上一题不同的是这里需要每次把左边的下标保存到数组当中。
+
+### 剑指 Offer II 016. 不含重复字符的最长子字符串
+
+https://leetcode.cn/problems/wtcaE1/
+
+给定一个字符串 s ，请你找出其中不含有重复字符的 最长连续子字符串 的长度。
+
+```cpp
+class Solution {
+public:
+    int lengthOfLongestSubstring(string s) {
+        unordered_map<char, int> win;
+        int left = 0, right = 0, res = 0;
+        while(right < s.size()) {
+            char c1 = s[right++];
+            win[c1]++;
+            while(win[c1] > 1) {
+                char c2 = s[left++];
+                win[c2]--;
+            }
+            res = max(res, right - left);
+        }
+        return res;
+    }
+};
+```
+
+用哈希表或者滑动窗口来做其实都可以，用滑动窗口需要改一点框架，总体来说还更简单。
+
+### 剑指 Offer II 017. 含有所有字符的最短字符串
+
+https://leetcode.cn/problems/M1oyTv/
+
+给定两个字符串 s 和  t 。返回 s 中包含  t  的所有字符的最短子字符串。如果 s 中不存在符合条件的子字符串，则返回空字符串 "" 。
+
+如果 s 中存在多个符合条件的子字符串，返回任意一个。
+
+```cpp
+class Solution {
+public:
+    string minWindow(string s, string t) {
+        unordered_map<char, int> need, win;
+        for(auto c : t) need[c]++;
+        int right = 0, left = 0, vl = 0, st = 0, len = INT_MAX;
+        while(right < s.size()) {
+            char c1 = s[right++];
+            if(need.count(c1)) {
+                win[c1]++;
+                if(win[c1] == need[c1]) vl++;
+            }
+            while(vl == need.size()) {
+                if(right - left < len) {
+                    len = right - left;
+                    st = left;
+                }
+                char c2 = s[left++];
+                if(need.count(c2)) {
+                    if(win[c2] == need[c2]) vl--;
+                    win[c2]--;
+                }
+            }
+        }
+        return len == INT_MAX ? "" : s.substr(st, len);
+    }
+};
+```
+
+最经典的滑动窗口问题，事实上和其他的没有什么大区别，理解逻辑就懂了。
