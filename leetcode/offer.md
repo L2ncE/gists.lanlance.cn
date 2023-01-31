@@ -782,3 +782,31 @@ public:
 ```
 
 最经典的滑动窗口问题，事实上和其他的没有什么大区别，理解逻辑就懂了。
+
+### 剑指 Offer 63. 股票的最大利润
+
+https://leetcode.cn/problems/gu-piao-de-zui-da-li-run-lcof/
+
+假设把某股票的价格按照时间先后顺序存储在数组中，请问买卖该股票一次可能获得的最大利润是多少？
+
+```cpp
+class Solution {
+public:
+    int maxProfit(vector<int>& prices) {
+        if(!prices.size()) return 0;
+        vector<vector<int>> dp(prices.size(), vector<int>(2));
+        for(int i = 0; i < prices.size(); i++) {
+            if(i == 0) {
+                dp[i][0] = 0;
+                dp[i][1] = -prices[i];
+                continue;
+            }
+            dp[i][0] = max(dp[i - 1][0], dp[i - 1][1] + prices[i]);
+            dp[i][1] = max(dp[i - 1][1], - prices[i]);
+        }
+        return dp[prices.size() - 1][0];
+    }
+};
+```
+
+股票题中最简单的一种，直接带公式即可。

@@ -45,6 +45,27 @@ public:
 
 我们从第一天开始遍历，然后通过 minpre 来记录到达第 i 天时，之前的股票最低价，然后每次都用当天的价格减去最低价查看是否是最大的利润即可。
 
+```cpp
+class Solution {
+public:
+    int maxProfit(vector<int>& prices) {
+        vector<vector<int>> dp(prices.size(), vector<int>(2));
+        for(int i = 0; i < prices.size(); i++) {
+            if(i == 0) {
+                dp[i][0] = 0;
+                dp[i][1] = -prices[i];
+                continue;
+            }
+            dp[i][0] = max(dp[i - 1][0], dp[i - 1][1] + prices[i]);
+            dp[i][1] = max(dp[i - 1][1], - prices[i]);
+        }
+        return dp[prices.size() - 1][0];
+    }
+};
+```
+
+用模板来写，更具普遍性。
+
 ### 118. 杨辉三角
 
 https://leetcode.cn/problems/pascals-triangle/
@@ -199,3 +220,200 @@ public:
 目标金额作为变量。不过 dp 函数体现在函数参数，而 dp 数组体现在数组索引
 
 dp 数组的定义：当目标金额为 i 时，至少需要 dp[i] 枚硬币凑出。
+
+### 122. 买卖股票的最佳时机 II
+
+https://leetcode.cn/problems/best-time-to-buy-and-sell-stock-ii/
+
+给你一个整数数组 prices ，其中  prices[i] 表示某支股票第 i 天的价格。
+
+在每一天，你可以决定是否购买和/或出售股票。你在任何时候   最多   只能持有 一股 股票。你也可以先购买，然后在 同一天 出售。
+
+返回 你能获得的 最大 利润  。
+
+```cpp
+class Solution {
+public:
+    int maxProfit(vector<int>& prices) {
+        vector<vector<int>> dp(prices.size(), vector<int>(2));
+        for(int i = 0; i < prices.size(); i++) {
+            if(i == 0) {
+                dp[i][0] = 0;
+                dp[i][1] = -prices[i];
+                continue;
+            }
+            dp[i][0] = max(dp[i - 1][0], dp[i - 1][1] + prices[i]);
+            dp[i][1] = max(dp[i - 1][1], dp[i - 1][0] - prices[i]);
+        }
+        return dp[prices.size() - 1][0];
+    }
+};
+```
+
+套股票问题的框架即可。
+
+```cpp
+class Solution {
+public:
+    int maxProfit(vector<int>& prices) {
+        int dp_i_0 = 0, dp_i_1 = INT_MIN;
+        for(int i = 0; i < prices.size(); i++) {
+            dp_i_0 = max(dp_i_0, dp_i_1 + prices[i]);
+            dp_i_1 = max(dp_i_1, dp_i_0 - prices[i]);
+        }
+        return dp_i_0;
+    }
+};
+```
+
+空间复杂度优化版本。
+
+### 309. 最佳买卖股票时机含冷冻期
+
+https://leetcode.cn/problems/best-time-to-buy-and-sell-stock-with-cooldown/
+
+给定一个整数数组 prices，其中第   prices[i]  表示第  i  天的股票价格 。​
+
+设计一个算法计算出最大利润。在满足以下约束条件下，你可以尽可能地完成更多的交易（多次买卖一支股票）:
+
+卖出股票后，你无法在第二天买入股票 (即冷冻期为 1 天)。
+注意：你不能同时参与多笔交易（你必须在再次购买前出售掉之前的股票）。
+
+```cpp
+class Solution {
+public:
+    int maxProfit(vector<int>& prices) {
+        vector<vector<int>> dp(prices.size(), vector<int>(2));
+        for(int i = 0; i < prices.size(); i++) {
+            if(i == 0) {
+                dp[i][0] = 0;
+                dp[i][1] = -prices[i];
+                continue;
+            }
+            if(i == 1) {
+                dp[i][0] = max(dp[i - 1][0], dp[i - 1][1] + prices[i]);
+                dp[i][1] = max(dp[i - 1][1], -prices[i]);
+                continue;
+            }
+            dp[i][0] = max(dp[i - 1][0], dp[i - 1][1] + prices[i]);
+            dp[i][1] = max(dp[i - 1][1], dp[i - 2][0] -prices[i]);
+        }
+        return dp[prices.size() - 1][0];
+    }
+};
+```
+
+需要注意的是不能再第二天买入股票，因此在买入时应该吧 `i - 1` 改为 `i - 2`。
+
+### 714. 买卖股票的最佳时机含手续费
+
+https://leetcode.cn/problems/best-time-to-buy-and-sell-stock-with-transaction-fee/
+
+给定一个整数数组  prices，其中 prices[i]表示第  i  天的股票价格 ；整数  fee 代表了交易股票的手续费用。
+
+你可以无限次地完成交易，但是你每笔交易都需要付手续费。如果你已经购买了一个股票，在卖出它之前你就不能再继续购买股票了。
+
+返回获得利润的最大值。
+
+注意：这里的一笔交易指买入持有并卖出股票的整个过程，每笔交易你只需要为支付一次手续费。
+
+```cpp
+class Solution {
+public:
+    int maxProfit(vector<int>& prices, int fee) {
+        vector<vector<int>> dp(prices.size(), vector<int>(2));
+        for(int i = 0; i < prices.size(); i++) {
+            if(i == 0) {
+                dp[i][0] = 0;
+                dp[i][1] = -prices[i] - fee;
+                continue;
+            }
+            dp[i][0] = max(dp[i - 1][0], dp[i - 1][1] + prices[i]);
+            dp[i][1] = max(dp[i - 1][1], dp[i - 1][0] - prices[i] - fee);
+        }
+        return dp[prices.size() - 1][0];
+    }
+};
+```
+
+需要考虑每次手续费的问题，在购买时扣除最方便。
+
+### 123. 买卖股票的最佳时机 III
+
+https://leetcode.cn/problems/best-time-to-buy-and-sell-stock-iii/
+
+给定一个数组，它的第 i 个元素是一支给定的股票在第 i 天的价格。
+
+设计一个算法来计算你所能获取的最大利润。你最多可以完成   两笔   交易。
+
+注意：你不能同时参与多笔交易（你必须在再次购买前出售掉之前的股票）。
+
+```cpp
+class Solution {
+public:
+    int maxProfit(vector<int>& prices) {
+        int max_k = 2;
+        vector<vector<vector<int>>> dp(prices.size(), vector<vector<int>>(max_k + 1, vector<int>(2)));
+        for(int i = 0; i < prices.size(); i++) {
+            for(int k = max_k; k > 0; k--) {
+                if(i == 0) {
+                    dp[i][k][0] = 0;
+                    dp[i][k][1] = -prices[i];
+                    continue;
+                }
+                dp[i][k][0] = max(dp[i - 1][k][0], dp[i - 1][k][1] + prices[i]);
+                dp[i][k][1] = max(dp[i - 1][k][1], dp[i - 1][k - 1][0] - prices[i]);
+            }
+        }
+        return dp[prices.size() - 1][max_k][0];
+    }
+};
+```
+
+开始考虑 k 的值，需要多一层。
+
+### 188. 买卖股票的最佳时机 IV
+
+https://leetcode.cn/problems/best-time-to-buy-and-sell-stock-iv/
+
+给定一个整数数组  prices ，它的第 i 个元素  prices[i] 是一支给定的股票在第 i 天的价格。
+
+设计一个算法来计算你所能获取的最大利润。你最多可以完成 k 笔交易。
+
+注意：你不能同时参与多笔交易（你必须在再次购买前出售掉之前的股票）。
+
+```cpp
+class Solution {
+public:
+    int maxProfit(int max_k, vector<int>& prices) {
+        vector<vector<vector<int>>> dp(prices.size(), vector<vector<int>>(max_k + 1, vector<int>(2)));
+        if(max_k > prices.size() / 2) {
+            vector<vector<int>> dp2(prices.size(), vector<int>(2));
+            for(int i = 0; i < prices.size(); i++) {
+                if(i == 0) {
+                    dp2[i][0] = 0;
+                    dp2[i][1] = -prices[i];
+                    continue;
+                }
+                dp2[i][0] = max(dp2[i - 1][0], dp2[i - 1][1] + prices[i]);
+                dp2[i][1] = max(dp2[i - 1][1], dp2[i - 1][0] - prices[i]);
+            }
+            return dp2[prices.size() - 1][0];
+        }
+        for(int i = 0; i < prices.size(); i++) {
+            for(int k = max_k; k > 0; k--) {
+                if(i == 0) {
+                    dp[i][k][0] = 0;
+                    dp[i][k][1] = -prices[i];
+                    continue;
+                }
+                dp[i][k][0] = max(dp[i - 1][k][0], dp[i - 1][k][1] + prices[i]);
+                dp[i][k][1] = max(dp[i - 1][k][1], dp[i - 1][k - 1][0] - prices[i]);
+            }
+        }
+        return dp[prices.size() - 1][max_k][0];
+    }
+};
+```
+
+最复杂的情况，看似和上一题差不多，只改了 `max_k` 的大小，实际上由于 `max_k` 过大会导致超内存的情况，所以当 `max_k > prices.size() / 2` 的情况，也就是可以判断为 k 无穷大的情况时，直接将代码优化为 k 为无穷大的情况即可。
