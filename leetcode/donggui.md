@@ -417,3 +417,96 @@ public:
 ```
 
 最复杂的情况，看似和上一题差不多，只改了 `max_k` 的大小，实际上由于 `max_k` 过大会导致超内存的情况，所以当 `max_k > prices.size() / 2` 的情况，也就是可以判断为 k 无穷大的情况时，直接将代码优化为 k 为无穷大的情况即可。
+
+### 198. 打家劫舍
+
+https://leetcode.cn/problems/house-robber/
+
+你是一个专业的小偷，计划偷窃沿街的房屋。每间房内都藏有一定的现金，影响你偷窃的唯一制约因素就是相邻的房屋装有相互连通的防盗系统，如果两间相邻的房屋在同一晚上被小偷闯入，系统会自动报警。
+
+给定一个代表每个房屋存放金额的非负整数数组，计算你 不触动警报装置的情况下 ，一夜之内能够偷窃到的最高金额。
+
+```cpp
+class Solution {
+public:
+    int rob(vector<int>& nums) {
+        vector<int> dp(nums.size() + 2);
+        for(int i = nums.size() - 1; i >= 0; i--) {
+            dp[i] = max(dp[i + 1], dp[i + 2] + nums[i]);
+        }
+        return dp[0];
+    }
+};
+```
+
+经典问题，找到状态转移方程即可。
+
+### 213. 打家劫舍 II
+
+https://leetcode.cn/problems/house-robber-ii/
+
+你是一个专业的小偷，计划偷窃沿街的房屋，每间房内都藏有一定的现金。这个地方所有的房屋都 围成一圈 ，这意味着第一个房屋和最后一个房屋是紧挨着的。同时，相邻的房屋装有相互连通的防盗系统，如果两间相邻的房屋在同一晚上被小偷闯入，系统会自动报警 。
+
+给定一个代表每个房屋存放金额的非负整数数组，计算你 在不触动警报装置的情况下 ，今晚能够偷窃到的最高金额。
+
+```cpp
+class Solution {
+public:
+    int rob(vector<int>& nums) {
+        if(nums.size() == 1) return nums[0];
+        return max(dp(nums, 0, nums.size() - 2), dp(nums, 1, nums.size() - 1));
+    }
+
+    int dp(vector<int>& nums, int st, int ed) {
+        vector<int> res(nums.size() + 2);
+        for(int i = ed; i >= st; i--) {
+            res[i] = max(res[i + 1], res[i + 2] + nums[i]);
+        }
+        return res[st];
+    }
+};
+```
+
+与上题类似，区别在于由于是环形数组，所以要不然选最前面要不然选最后面一个。
+
+### 337. 打家劫舍 III
+
+https://leetcode.cn/problems/house-robber-iii/
+
+小偷又发现了一个新的可行窃的地区。这个地区只有一个入口，我们称之为  root 。
+
+除了  root  之外，每栋房子有且只有一个“父“房子与之相连。一番侦察之后，聪明的小偷意识到“这个地方的所有房屋的排列类似于一棵二叉树”。 如果 两个直接相连的房子在同一天晚上被打劫 ，房屋将自动报警。
+
+给定二叉树的  root 。返回   在不触动警报的情况下  ，小偷能够盗取的最高金额  。
+
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
+public:
+    int rob(TreeNode* root) {
+        vector<int> res = dp(root);
+        return max(res[0], res[1]);
+    }
+
+    vector<int> dp(TreeNode* root) {
+        if(!root) return {0, 0};
+        vector<int> left = dp(root->left);
+        vector<int> right = dp(root->right);
+        int rob = root->val + left[1] + right[1];
+        int notrob = max(left[0], left[1]) + max(right[0], right[1]);
+        return {rob, notrob};
+    }
+};
+```
+
+返回一个大小为 2 的数组，res[0] 表示不抢 root 的话，得到的最大钱数 res[1] 表示抢 root 的话，得到的最大钱数。
