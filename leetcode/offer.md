@@ -861,3 +861,59 @@ public:
 ```
 
 与上一题不同的是因为最前面和最后面不能同时偷，所以选一个偷就好了。
+
+### 剑指 Offer 03. 数组中重复的数字
+
+https://leetcode.cn/problems/shu-zu-zhong-zhong-fu-de-shu-zi-lcof/
+
+找出数组中重复的数字。
+在一个长度为 n 的数组 nums 里的所有数字都在 0 ～ n-1 的范围内。数组中某些数字是重复的，但不知道有几个数字重复了，也不知道每个数字重复了几次。请找出数组中任意一个重复的数字。
+
+```cpp
+class Solution {
+public:
+    int findRepeatNumber(vector<int>& nums) {
+        unordered_set<int> S;
+        for(int i = 0; i < nums.size(); i++) {
+            if(S.count(nums[i])) return nums[i];
+            S.insert(nums[i]);
+        }
+        return 0;
+    }
+};
+```
+
+用哈希集合即可。
+
+### 剑指 Offer 04. 二维数组中的查找
+
+https://leetcode.cn/problems/er-wei-shu-zu-zhong-de-cha-zhao-lcof/
+
+在一个 n \* m 的二维数组中，每一行都按照从左到右   非递减   的顺序排序，每一列都按照从上到下   非递减   的顺序排序。请完成一个高效的函数，输入这样的一个二维数组和一个整数，判断数组中是否含有该整数。
+
+```cpp
+class Solution {
+public:
+    bool findNumberIn2DArray(vector<vector<int>>& matrix, int target) {
+        if(!matrix.size()) return false;
+        if(!matrix[0].size()) return false;
+        for(int i = 0; i < matrix.size(); i++) {
+            if (func(matrix[i], target)) return true;
+        }
+        return false;
+    }
+
+    bool func(vector<int>& nums, int target) {
+        int l = 0, r = nums.size() - 1;
+        while(l < r) {
+            int mid = (l + r) / 2;
+            if(nums[mid] >= target) r = mid;
+            else l = mid + 1;
+        }
+        if(nums[r] != target) return false;
+        return true;
+    }
+};
+```
+
+二分即可。
