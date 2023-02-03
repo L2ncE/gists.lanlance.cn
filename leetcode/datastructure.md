@@ -538,6 +538,55 @@ public:
 
 难点在于对 `pop()` 和 `peek` 的操作，用一个临时栈来存放最后一个值以外的元素，最后再将其打回即可。
 
+```cpp
+class MyQueue {
+public:
+    stack<int> s1, s2;
+    MyQueue() {}
+
+    void push(int x) {
+        s2.push(x);
+    }
+
+    int pop() {
+        if(s1.empty()) {
+            while(!s2.empty()) {
+                s1.push(s2.top());
+                s2.pop();
+            }
+        }
+        int tmp = s1.top();
+        s1.pop();
+        return tmp;
+    }
+
+    int peek() {
+        if(s1.empty()) {
+            while(!s2.empty()) {
+                s1.push(s2.top());
+                s2.pop();
+            }
+        }
+        return s1.top();
+    }
+
+    bool empty() {
+        return s1.empty() && s2.empty();
+    }
+};
+
+/**
+ * Your MyQueue object will be instantiated and called as such:
+ * MyQueue* obj = new MyQueue();
+ * obj->push(x);
+ * int param_2 = obj->pop();
+ * int param_3 = obj->peek();
+ * bool param_4 = obj->empty();
+ */
+```
+
+感觉更好理解。
+
 ### 225. 用队列实现栈
 
 https://leetcode.cn/problems/implement-stack-using-queues/
@@ -1804,3 +1853,46 @@ public:
 
 前序位置无法获取子树信息，所以只能让每个节点调用 dfs 函数去算子树的深度。
 我们应该把计算「直径」的逻辑放在后序位置，准确说应该是放在 dfs 的后序位置，因为 dfs 的后序位置是知道左右子树的最大深度的。
+
+### 105. 从前序与中序遍历序列构造二叉树
+
+https://leetcode.cn/problems/construct-binary-tree-from-preorder-and-inorder-traversal/
+
+给定两个整数数组  preorder 和 inorder ，其中  preorder 是二叉树的先序遍历， inorder  是同一棵树的中序遍历，请构造二叉树并返回其根节点。
+
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
+public:
+    TreeNode* buildTree(vector<int>& preorder, vector<int>& inorder) {
+        return dfs(preorder, 0, preorder.size() - 1, inorder, 0, inorder.size() - 1);
+    }
+
+    TreeNode* dfs(vector<int>& preorder, int pst, int ped, vector<int>& inorder, int ist, int ied) {
+        if(pst > ped) return NULL;
+        int val = preorder[pst], idx = -1;
+        auto root = new TreeNode(val);
+        for(int i = ist; i <= ied; i++) {
+            if(inorder[i] == val) {
+                idx = i;
+                break;
+            }
+        }
+        root->left = dfs(preorder, pst + 1, pst + idx - ist, inorder, ist, idx - 1);
+        root->right = dfs(preorder, pst + idx - ist + 1, ped, inorder, idx + 1, ied);
+        return root;
+    }
+};
+```
+
+注意画图来分析递归时的参数设计。

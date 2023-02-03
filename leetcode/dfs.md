@@ -744,3 +744,46 @@ public:
 ```
 
 用一个哈希集合来进行判重即可。
+
+### 79. 单词搜索
+
+https://leetcode.cn/problems/word-search/
+
+给定一个  m x n 二维字符网格  board 和一个字符串单词  word 。如果  word 存在于网格中，返回 true ；否则，返回 false 。
+
+单词必须按照字母顺序，通过相邻的单元格内的字母构成，其中“相邻”单元格是那些水平相邻或垂直相邻的单元格。同一个单元格内的字母不允许被重复使用。
+
+```cpp
+class Solution {
+public:
+    bool exist(vector<vector<char>>& board, string word) {
+        if(board.empty() || board[0].empty()) return false;
+        int n = board.size(), m = board[0].size();
+        for(int i = 0; i < n; i++) {
+            for(int j = 0; j < m; j++) {
+                if(dfs(board, word, 0, i, j)) return true;
+            }
+        }
+        return false;
+    }
+
+    int dx[4] = {-1, 0, 1, 0}, dy[4] = {0, 1, 0, -1};
+
+    bool dfs(vector<vector<char>>& board, string word, int u, int x, int y) {
+        if(board[x][y] != word[u]) return false;
+        if(u == word.size() - 1) return true;
+        int n = board.size(), m = board[0].size();
+        int t = board[x][y];
+        board[x][y] = '.';
+        for(int i = 0; i < 4; i++) {
+            int a = x + dx[i], b = y + dy[i];
+            if(a < 0 || b < 0 || a >= n || b >= m || board[a][b] == '.') continue;
+            if(dfs(board, word, u + 1, a, b)) return true;
+        }
+        board[x][y] = t;
+        return false;
+    }
+};
+```
+
+通过深搜，上下左右找即可。

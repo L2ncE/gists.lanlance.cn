@@ -163,3 +163,66 @@ public:
 ```
 
 和上题一样，注意溢出。
+
+### 154. 寻找旋转排序数组中的最小值 II
+
+https://leetcode.cn/problems/find-minimum-in-rotated-sorted-array-ii/
+
+已知一个长度为 n 的数组，预先按照升序排列，经由 1 到 n 次 旋转 后，得到输入数组。例如，原数组 nums = [0,1,4,4,5,6,7] 在变化后可能得到：
+若旋转 4 次，则可以得到 [4,5,6,7,0,1,4]
+若旋转 7 次，则可以得到 [0,1,4,4,5,6,7]
+注意，数组 [a[0], a[1], a[2], ..., a[n-1]] 旋转一次 的结果为数组 [a[n-1], a[0], a[1], a[2], ..., a[n-2]] 。
+
+给你一个可能存在 重复 元素值的数组 nums ，它原来是一个升序排列的数组，并按上述情形进行了多次旋转。请你找出并返回数组中的 最小元素 。
+
+你必须尽可能减少整个过程的操作步骤。
+
+```cpp
+class Solution {
+public:
+    int findMin(vector<int>& nums) {
+        int l = 0, r = nums.size() - 1;
+        while(l < r) {
+            int mid = (l + r) / 2;
+            if(nums[mid] > nums[r]) l = mid + 1;
+            else if(nums[mid] < nums[r]) r = mid;
+            else r--;
+        }
+        return nums[r];
+    }
+};
+```
+
+这道题需要用到二分，当 nums[m] > nums[j] 时： mm 一定在 左排序数组 中，即旋转点 xx 一定在 [m + 1, j] 闭区间内，因此执行 i = m + 1；
+当 nums[m] < nums[j] 时： mm 一定在 右排序数组 中，即旋转点 xx 一定在[i, m] 闭区间内，因此执行 j = m；
+当 nums[m] = nums[j] 时： 无法判断 mm 在哪个排序数组中，即无法判断旋转点 xx 在 [i, m] 还是 [m + 1, j] 区间中。解决方案： 执行 j = j - 1 缩小判断范围。
+
+### 153. 寻找旋转排序数组中的最小值
+
+https://leetcode.cn/problems/find-minimum-in-rotated-sorted-array/
+
+已知一个长度为 n 的数组，预先按照升序排列，经由 1 到 n 次 旋转 后，得到输入数组。例如，原数组 nums = [0,1,2,4,5,6,7] 在变化后可能得到：
+若旋转 4 次，则可以得到 [4,5,6,7,0,1,2]
+若旋转 7 次，则可以得到 [0,1,2,4,5,6,7]
+注意，数组 [a[0], a[1], a[2], ..., a[n-1]] 旋转一次 的结果为数组 [a[n-1], a[0], a[1], a[2], ..., a[n-2]] 。
+
+给你一个元素值 互不相同 的数组 nums ，它原来是一个升序排列的数组，并按上述情形进行了多次旋转。请你找出并返回数组中的 最小元素 。
+
+你必须设计一个时间复杂度为  O(log n) 的算法解决此问题。
+
+```cpp
+class Solution {
+public:
+    int findMin(vector<int>& nums) {
+        int l = 0, r = nums.size() - 1;
+        while(l < r) {
+            int mid = (l + r) / 2;
+            if(nums[mid] > nums[r]) l = mid + 1;
+            else if(nums[mid] <= nums[r]) r = mid;
+        }
+        return nums[r];
+    }
+};
+```
+
+与上一题类似，不过少一个条件判断。

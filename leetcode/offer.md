@@ -29,6 +29,25 @@ public:
 
 先把字符串开大，然后反着遍历字符串，将空格替换即可。
 
+```cpp
+class Solution {
+public:
+    string replaceSpace(string s) {
+        string res;
+        for(auto c : s) {
+            if(c == ' ') {
+                res.push_back('%');
+                res.push_back('2');
+                res.push_back('0');
+            } else res.push_back(c);
+        }
+        return res;
+    }
+};
+```
+
+简单做法，非原地。
+
 ### 剑指 Offer 58 - II. 左旋转字符串
 
 https://leetcode.cn/problems/zuo-xuan-zhuan-zi-fu-chuan-lcof/
@@ -917,3 +936,252 @@ public:
 ```
 
 二分即可。
+
+### 剑指 Offer 06. 从尾到头打印链表
+
+https://leetcode.cn/problems/cong-wei-dao-tou-da-yin-lian-biao-lcof/
+
+输入一个链表的头节点，从尾到头反过来返回每个节点的值（用数组返回）。
+
+```cpp
+/**
+ * Definition for singly-linked list.
+ * struct ListNode {
+ *     int val;
+ *     ListNode *next;
+ *     ListNode(int x) : val(x), next(NULL) {}
+ * };
+ */
+class Solution {
+public:
+    vector<int> reversePrint(ListNode* head) {
+        vector<int> res;
+        while(head) {
+            res.push_back(head->val);
+            head = head->next;
+        }
+        reverse(res.begin(), res.end());
+        return res;
+    }
+};
+```
+
+从前往后打印再翻转一下即可。
+
+### 剑指 Offer 07. 重建二叉树
+
+https://leetcode.cn/problems/zhong-jian-er-cha-shu-lcof/
+
+输入某二叉树的前序遍历和中序遍历的结果，请构建该二叉树并返回其根节点。
+
+假设输入的前序遍历和中序遍历的结果中都不含重复的数字。
+
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode(int x) : val(x), left(NULL), right(NULL) {}
+ * };
+ */
+class Solution {
+public:
+    TreeNode* buildTree(vector<int>& preorder, vector<int>& inorder) {
+        return dfs(preorder, 0, preorder.size() - 1,
+        inorder, 0, inorder.size() - 1);
+    }
+
+    TreeNode* dfs(vector<int>& preorder, int pst, int ped, vector<int>& inorder, int ist, int ied) {
+        if(pst > ped) return NULL;
+        int pval = preorder[pst], idx = -1;
+        auto root = new TreeNode(pval);
+        for(int i = ist; i <= ied; i++) {
+            if(inorder[i] == pval) {
+                idx = i;
+                break;
+            }
+        }
+        root->left = dfs(preorder, pst + 1, pst + idx - ist, inorder, ist, idx - 1);
+        root->right = dfs(preorder, pst + idx - ist + 1, ped, inorder, idx + 1, ied);
+        return root;
+    }
+};
+```
+
+经典，注意左右递归时的条件，画图会很清晰。
+
+### 剑指 Offer 09. 用两个栈实现队列
+
+用两个栈实现一个队列。队列的声明如下，请实现它的两个函数 appendTail 和 deleteHead ，分别完成在队列尾部插入整数和在队列头部删除整数的功能。(若队列中没有元素，deleteHead  操作返回 -1 )
+
+```cpp
+class CQueue {
+public:
+    CQueue() {}
+    stack<int> s1, s2;
+
+    void appendTail(int value) {
+        s1.push(value);
+    }
+
+    int deleteHead() {
+        if(s1.empty() && s2.empty()) return -1;
+        if(!s2.size()) {
+            while(s1.size()) {
+                s2.push(s1.top());
+                s1.pop();
+            }
+        }
+        int t = s2.top();
+        s2.pop();
+        return t;
+    }
+};
+
+/**
+ * Your CQueue object will be instantiated and called as such:
+ * CQueue* obj = new CQueue();
+ * obj->appendTail(value);
+ * int param_2 = obj->deleteHead();
+ */
+```
+
+用一个栈当队列，另外一个用来辅助即可。
+
+### 剑指 Offer 10- I. 斐波那契数列
+
+https://leetcode.cn/problems/fei-bo-na-qi-shu-lie-lcof/
+
+写一个函数，输入 n ，求斐波那契（Fibonacci）数列的第 n 项（即 F(N)）。斐波那契数列的定义如下：
+
+F(0) = 0,   F(1) = 1
+F(N) = F(N - 1) + F(N - 2), 其中 N > 1.
+斐波那契数列由 0 和 1 开始，之后的斐波那契数就是由之前的两数相加而得出。
+
+答案需要取模 1e9+7（1000000007），如计算初始结果为：1000000008，请返回 1。
+
+```cpp
+class Solution {
+public:
+    int fib(int n) {
+        if(n < 2) return n;
+        int i_1 = 0, i_2 = 0, i_3 = 1;
+        for(int i = 2; i <= n; i++) {
+            i_1 = i_2;
+            i_2 = i_3;
+            i_3 = (i_1 + i_2) % 1000000007;
+        }
+        return i_3;
+    }
+};
+```
+
+用动态规划，斐波那契数的边界条件是 F(0)=0F(0)=0 和 F(1)=1F(1)=1。当 n>1n>1 时，每一项的和都等于前两项的和，因此有如下递推关系：
+
+```cpp
+F(n)=F(n-1)+F(n-2)
+F(n)=F(n−1)+F(n−2)
+```
+
+由于斐波那契数存在递推关系，因此可以使用动态规划求解。动态规划的状态转移方程即为上述递推关系，边界条件为 F(0)F(0) 和 F(1)F(1)。
+
+### 剑指 Offer 10- II. 青蛙跳台阶问题
+
+https://leetcode.cn/problems/qing-wa-tiao-tai-jie-wen-ti-lcof/
+
+一只青蛙一次可以跳上 1 级台阶，也可以跳上 2 级台阶。求该青蛙跳上一个 n  级的台阶总共有多少种跳法。
+
+答案需要取模 1e9+7（1000000007），如计算初始结果为：1000000008，请返回 1。
+
+```cpp
+class Solution {
+public:
+    int numWays(int n) {
+        if(n < 2) return 1;
+        int i_1 = 0, i_2 = 1, i_3 = 1;
+        for(int i = 2; i <= n; i++) {
+            i_1 = i_2;
+            i_2 = i_3;
+            i_3 = (i_1 + i_2) % 1000000007;
+        }
+        return i_3;
+    }
+};
+```
+
+斐波那契数列问题，和上一题一样的思路。
+
+### 剑指 Offer 11. 旋转数组的最小数字
+
+https://leetcode.cn/problems/xuan-zhuan-shu-zu-de-zui-xiao-shu-zi-lcof/
+
+把一个数组最开始的若干个元素搬到数组的末尾，我们称之为数组的旋转。
+
+给你一个可能存在   重复   元素值的数组  numbers ，它原来是一个升序排列的数组，并按上述情形进行了一次旋转。请返回旋转数组的最小元素。例如，数组  [3,4,5,1,2] 为 [1,2,3,4,5] 的一次旋转，该数组的最小值为 1。
+
+注意，数组 [a[0], a[1], a[2], ..., a[n-1]] 旋转一次 的结果为数组 [a[n-1], a[0], a[1], a[2], ..., a[n-2]] 。
+
+```cpp
+class Solution {
+public:
+    int minArray(vector<int>& numbers) {
+        int l = 0, r = numbers.size() - 1;
+        while(l < r) {
+            int mid = (l + r) / 2;
+            if(numbers[mid] > numbers[r]) l = mid + 1;
+            else if(numbers[mid] < numbers[r]) r = mid;
+            else r--;
+        }
+        return numbers[r];
+    }
+};
+```
+
+这道题需要用到二分，当 nums[m] > nums[j] 时： mm 一定在 左排序数组 中，即旋转点 xx 一定在 [m + 1, j] 闭区间内，因此执行 i = m + 1；
+当 nums[m] < nums[j] 时： mm 一定在 右排序数组 中，即旋转点 xx 一定在[i, m] 闭区间内，因此执行 j = m；
+当 nums[m] = nums[j] 时： 无法判断 mm 在哪个排序数组中，即无法判断旋转点 xx 在 [i, m] 还是 [m + 1, j] 区间中。解决方案： 执行 j = j - 1 缩小判断范围。
+
+### 剑指 Offer 12. 矩阵中的路径
+
+https://leetcode.cn/problems/ju-zhen-zhong-de-lu-jing-lcof/
+
+给定一个  m x n 二维字符网格  board 和一个字符串单词  word 。如果  word 存在于网格中，返回 true ；否则，返回 false 。
+
+单词必须按照字母顺序，通过相邻的单元格内的字母构成，其中“相邻”单元格是那些水平相邻或垂直相邻的单元格。同一个单元格内的字母不允许被重复使用。
+
+```cpp
+class Solution {
+public:
+    bool exist(vector<vector<char>>& board, string word) {
+        if(board.empty() || board[0].empty()) return false;
+        int n = board.size(), m = board[0].size();
+        for(int i = 0; i < n; i++) {
+            for(int j = 0; j < m; j++) {
+                if(dfs(board, word, 0, i, j)) return true;
+            }
+        }
+        return false;
+    }
+
+    int dx[4] = {-1, 0, 1, 0}, dy[4] = {0, 1, 0, -1};
+
+    bool dfs(vector<vector<char>>& board, string word, int u, int x, int y) {
+        if(board[x][y] != word[u]) return false;
+        if(u == word.size() - 1) return true;
+        int n = board.size(), m = board[0].size();
+        int t = board[x][y];
+        board[x][y] = '.';
+        for(int i = 0; i < 4; i++) {
+            int a = x + dx[i], b = y + dy[i];
+            if(a < 0 || b < 0 || a >= n || b >= m || board[a][b] == '.') continue;
+            if(dfs(board, word, u + 1, a, b)) return true;
+        }
+        board[x][y] = t;
+        return false;
+    }
+};
+```
+
+通过深搜，上下左右找即可。
