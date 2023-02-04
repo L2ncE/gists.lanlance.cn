@@ -1185,3 +1185,240 @@ public:
 ```
 
 通过深搜，上下左右找即可。
+
+### 剑指 Offer 14- I. 剪绳子
+
+https://leetcode.cn/problems/jian-sheng-zi-lcof/
+
+给你一根长度为 n 的绳子，请把绳子剪成整数长度的 m 段（m、n 都是整数，n>1 并且 m>1），每段绳子的长度记为 k[0],k[1]...k[m-1] 。请问 k[0]_k[1]_...\*k[m-1] 可能的最大乘积是多少？例如，当绳子的长度是 8 时，我们把它剪成长度分别为 2、3、3 的三段，此时得到的最大乘积是 18。
+
+```cpp
+class Solution {
+public:
+    int cuttingRope(int n) {
+        vector<int> dp(n + 1);
+         dp[2] = 1;
+         for(int i = 3; i <= n; i++) {
+             for(int j = 1; j <= i / 2; j++) {
+                 dp[i] = max(dp[i], max(j * (i - j), j * dp[i - j]));
+             }
+         }
+         return dp[n];
+    }
+};
+```
+
+列出状态转移方程 `dp[i] = max(dp[i], max(j * (i - j), j * dp[i - j]))` 就非常简单了。
+
+### 剑指 Offer 14- II. 剪绳子 II
+
+https://leetcode.cn/problems/jian-sheng-zi-ii-lcof/
+
+给你一根长度为 n 的绳子，请把绳子剪成整数长度的 m  段（m、n 都是整数，n>1 并且 m>1），每段绳子的长度记为 k[0],k[1]...k[m - 1] 。请问 k[0],k[1]...\*k[m - 1] 可能的最大乘积是多少？例如，当绳子的长度是 8 时，我们把它剪成长度分别为 2、3、3 的三段，此时得到的最大乘积是 18。
+
+答案需要取模 1e9+7（1000000007），如计算初始结果为：1000000008，请返回 1。
+
+```cpp
+class Solution {
+public:
+    int cuttingRope(int n) {
+        long long res = 1;
+        if(n < 4) return n - 1;
+        if(n == 4) return n;
+        while(n > 4) {
+            res *= 3;
+            res %= 1000000007;
+            n -= 3;
+        }
+        return (res * n) % 1000000007;
+    }
+};
+```
+
+用动态规划会爆范围，只能贪心，数学证明太难，建议背过即可。
+
+### 剑指 Offer 15. 二进制中 1 的个数
+
+https://leetcode.cn/problems/er-jin-zhi-zhong-1de-ge-shu-lcof/
+
+编写一个函数，输入是一个无符号整数（以二进制串的形式），返回其二进制表达式中数字位数为 '1' 的个数（也被称为 汉明重量).）。
+
+```cpp
+class Solution {
+public:
+    int hammingWeight(uint32_t n) {
+        int sum = 0;
+        while(n > 0) {
+            n = n & (n - 1);
+            sum++;
+        }
+        return sum;
+    }
+};
+```
+
+通过 `n = n & (n - 1)` 每次都能消灭一个 1，直到 n 为 0 时退出即可。
+
+### 剑指 Offer 16. 数值的整数次方
+
+https://leetcode.cn/problems/shu-zhi-de-zheng-shu-ci-fang-lcof/
+
+实现 pow(x, n) ，即计算 x 的整数 n 次幂函数（即，xn ）。
+
+```cpp
+class Solution {
+public:
+    double myPow(double x, int n) {
+        typedef long long ll;
+        double res = 1;
+        for(ll i = abs(ll(n)); i; i >>= 1) {
+            if(i & 1) res *= x;
+            x *= x;
+        }
+        if(n < 0) return 1 / res;
+        return res;
+    }
+};
+```
+
+按照定义，计算 x 的 n 次方是将 nn 个 x 连乘，效率比较低，会超时。因为乘法具有结合律，考虑每次将一部分连乘批量计算好，作为最终答案的一部分。这就可以将 n 进行二进制拆分，若 n 的二进制位的第 k 位是 1，则 ans 可以乘上 x2k。
+而计算 x2k，只需每次将自身做平方即可。
+
+### 剑指 Offer 17. 打印从 1 到最大的 n 位数
+
+https://leetcode.cn/problems/da-yin-cong-1dao-zui-da-de-nwei-shu-lcof/
+
+```cpp
+class Solution {
+public:
+    vector<int> printNumbers(int n) {
+        int max = 1;
+        for(int i = 0; i < n; i++) max *= 10;
+        vector<int> res;
+        for(int i = 1; i < max; i++) res.push_back(i);
+        return res;
+    }
+};
+```
+
+没搞懂这道题存在的意义。
+
+### 剑指 Offer 18. 删除链表的节点
+
+https://leetcode.cn/problems/shan-chu-lian-biao-de-jie-dian-lcof/
+
+```cpp
+/**
+ * Definition for singly-linked list.
+ * struct ListNode {
+ *     int val;
+ *     ListNode *next;
+ *     ListNode(int x) : val(x), next(NULL) {}
+ * };
+ */
+class Solution {
+public:
+    ListNode* deleteNode(ListNode* head, int val) {
+        if(!head) return head;
+        auto dummy = new ListNode();
+        dummy->next = head;
+        auto p = dummy;
+        while(head) {
+            if(head->val == val) p->next = p->next->next;
+            head = head->next;
+            p = p->next;
+        }
+        return dummy->next;
+    }
+};
+```
+
+用一个虚拟头结点轻松秒杀。
+
+### 剑指 Offer 20. 表示数值的字符串
+
+https://leetcode.cn/problems/biao-shi-shu-zhi-de-zi-fu-chuan-lcof/
+
+请实现一个函数用来判断字符串是否表示数值（包括整数和小数）。
+
+数值（按顺序）可以分成以下几个部分：
+
+若干空格
+一个   小数   或者   整数
+（可选）一个  'e'  或  'E' ，后面跟着一个   整数
+若干空格
+小数（按顺序）可以分成以下几个部分：
+
+（可选）一个符号字符（'+' 或 '-'）
+下述格式之一：
+至少一位数字，后面跟着一个点 '.'
+至少一位数字，后面跟着一个点 '.' ，后面再跟着至少一位数字
+一个点 '.' ，后面跟着至少一位数字
+整数（按顺序）可以分成以下几个部分：
+
+（可选）一个符号字符（'+' 或 '-'）
+至少一位数字
+部分数值列举如下：
+
+["+100", "5e2", "-123", "3.1416", "-1E-16", "0123"]
+部分非数值列举如下：
+
+["12e", "1a3.14", "1.2.3", "+-5", "12e+5.4"]
+
+```cpp
+class Solution {
+public:
+    bool isNumber(string s) {
+        //去掉首尾空格
+        int i = 0;
+        while (i < s.size() && s[i] == ' ') i++;
+        s = s.substr(i);
+        while (s.back() == ' ') s.pop_back();
+
+        bool numFlag = false;
+        bool dotFlag = false;
+        bool eFlag = false;
+        for (int i = 0; i < s.size(); i++) {
+            // 判定为数字，则标记numFlag
+            if (isdigit(s[i])) numFlag = true;
+            // 判定为'.'需要没出现过'.'并且没出现过'e'
+            else if (s[i] == '.' && !dotFlag && !eFlag) dotFlag = true;
+            // 判定为'e'，需要没出现过'e'，并且出现过数字
+            else if ((s[i] == 'e' || s[i] == 'E') && !eFlag && numFlag) {
+                eFlag = true;
+                numFlag = false; // 'e'后面必须跟着一个整数，所以出现'e'之后就标志为false
+            }
+            // 判定为'+''-'符号，只能出现在第一位或者紧接'e'后面
+            else if ((s[i] == '+' || s[i] == '-') && (i == 0 || s[i - 1] == 'e' || s[i - 1] == 'E')) continue;
+            // 其他情况，都是非法的
+            else return false;
+        }
+        return numFlag;
+    }
+};
+```
+
+详看注释。
+
+### 剑指 Offer 21. 调整数组顺序使奇数位于偶数前面
+
+https://leetcode.cn/problems/diao-zheng-shu-zu-shun-xu-shi-qi-shu-wei-yu-ou-shu-qian-mian-lcof/
+
+输入一个整数数组，实现一个函数来调整该数组中数字的顺序，使得所有奇数在数组的前半部分，所有偶数在数组的后半部分。
+
+```cpp
+class Solution {
+public:
+    vector<int> exchange(vector<int>& nums) {
+        int s = 0, f = 0;
+        while(f < nums.size()) {
+            if(nums[f] % 2 == 1) {
+                swap(nums[s], nums[f]);
+                s++;
+            }
+            f++;
+        }
+        return nums;
+    }
+};
+```

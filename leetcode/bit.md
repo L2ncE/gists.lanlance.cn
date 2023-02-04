@@ -59,3 +59,28 @@ public:
 ```
 
 每次将 res 左移一位，值得一提的是 `res << 1` 与 `res * 2` 相等。然后取出 n 的第 i 位即可。
+
+### 50. Pow(x, n)
+
+https://leetcode.cn/problems/powx-n/
+
+实现 pow(x, n) ，即计算 x 的整数 n 次幂函数（即，xn ）。
+
+```cpp
+class Solution {
+public:
+    double myPow(double x, int n) {
+        typedef long long ll;
+        double res = 1;
+        for(ll i = abs(ll(n)); i; i >>= 1) {
+            if(i & 1) res *= x;
+            x *= x;
+        }
+        if(n < 0) return 1 / res;
+        return res;
+    }
+};
+```
+
+按照定义，计算 x 的 n 次方是将 nn 个 x 连乘，效率比较低，会超时。因为乘法具有结合律，考虑每次将一部分连乘批量计算好，作为最终答案的一部分。这就可以将 n 进行二进制拆分，若 n 的二进制位的第 k 位是 1，则 ans 可以乘上 x2k。
+而计算 x2k，只需每次将自身做平方即可。
