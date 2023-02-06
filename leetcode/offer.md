@@ -1422,3 +1422,314 @@ public:
     }
 };
 ```
+
+### 剑指 Offer 24. 反转链表
+
+https://leetcode.cn/problems/fan-zhuan-lian-biao-lcof/
+
+```cpp
+/**
+ * Definition for singly-linked list.
+ * struct ListNode {
+ *     int val;
+ *     ListNode *next;
+ *     ListNode(int x) : val(x), next(NULL) {}
+ * };
+ */
+class Solution {
+public:
+    ListNode* reverseList(ListNode* head) {
+        if(!head) return head;
+        auto a = head, b = head->next;
+        while(b) {
+            auto t = b->next;
+            b->next = a;
+            a = b;
+            b = t;
+        }
+        head->next = NULL;
+        return a;
+    }
+};
+```
+
+原地算法，经典问题。
+
+### 剑指 Offer 26. 树的子结构
+
+https://leetcode.cn/problems/shu-de-zi-jie-gou-lcof/
+
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode(int x) : val(x), left(NULL), right(NULL) {}
+ * };
+ */
+class Solution {
+public:
+    bool isSubStructure(TreeNode* A, TreeNode* B) {
+        if(!A || !B) return false;
+        return isSub(A, B) || isSubStructure(A->left, B) || isSubStructure(A->right, B);
+    }
+
+    bool isSub(TreeNode* A, TreeNode* B) {
+        if(!B) return true;
+        if(!A || A->val != B->val) return false;
+        return isSub(A->left, B->left) && isSub(A->right, B->right);
+    }
+};
+```
+
+递归，主要有两种情况，可能是根节点开始的子树，也有可能是后继节点开始的子树，所以需要把三个或起来，其中 `isSub` 进行了对两边的递归。
+
+### 剑指 Offer 27. 二叉树的镜像
+
+https://leetcode.cn/problems/er-cha-shu-de-jing-xiang-lcof/
+
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode(int x) : val(x), left(NULL), right(NULL) {}
+ * };
+ */
+class Solution {
+public:
+    TreeNode* mirrorTree(TreeNode* root) {
+        dfs(root);
+        return root;
+    }
+
+    void dfs(TreeNode* root) {
+        if(!root) return;
+
+        auto t = root->left;
+        root->left = root->right;
+        root->right = t;
+
+        dfs(root->left);
+        dfs(root->right);
+    }
+};
+```
+
+用一个 dfs 函数遍历每个节点，让每个节点的左右子节点颠倒过来就行了。
+
+### 剑指 Offer 28. 对称的二叉树
+
+https://leetcode.cn/problems/dui-cheng-de-er-cha-shu-lcof/
+
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode(int x) : val(x), left(NULL), right(NULL) {}
+ * };
+ */
+class Solution {
+public:
+    bool isSymmetric(TreeNode* root) {
+        if(!root) return true;
+        return dfs(root->left, root->right);
+    }
+
+    bool dfs(TreeNode* left, TreeNode* right) {
+        if(!left && !right) return true;
+        if(!left || !right || left->val != right->val) return false;
+        return dfs(left->left, right->right) && dfs(left->right, right->left);
+    }
+};
+```
+
+遍历两边进行比较即可。
+
+### 剑指 Offer 29. 顺时针打印矩阵
+
+https://leetcode.cn/problems/shun-shi-zhen-da-yin-ju-zhen-lcof/
+
+```cpp
+class Solution {
+public:
+    vector<int> spiralOrder(vector<vector<int>>& matrix) {
+        if(matrix.size() == 0) return {};
+        vector<int> res;
+        int n = matrix.size(), m = matrix[0].size();
+        vector<vector<bool>> st(n, vector<bool>(m));
+        int dx[4] = {0, 1, 0, -1}, dy[4] = {1, 0, -1, 0};
+        for(int i = 0, x = 0, y = 0, d = 0; i < n * m; i++) {
+            res.push_back(matrix[x][y]);
+            st[x][y] = true;
+            int a = x + dx[d], b = y + dy[d];
+            if(a < 0 || b < 0 || a >= n || b >= m || st[a][b]) {
+                d = (d + 1) % 4;
+                a = x + dx[d], b = y + dy[d];
+            }
+            x = a, y = b;
+        }
+        return res;
+    }
+};
+```
+
+用偏移量实现，不用模拟。
+
+### 剑指 Offer 30. 包含 min 函数的栈
+
+https://leetcode.cn/problems/bao-han-minhan-shu-de-zhan-lcof/
+
+定义栈的数据结构，请在该类型中实现一个能够得到栈的最小元素的 min 函数在该栈中，调用 min、push 及 pop 的时间复杂度都是 O(1)。
+
+```cpp
+class MinStack {
+public:
+    /** initialize your data structure here. */
+    stack<int> s;
+    stack<int> t;
+    MinStack() {
+        t.push(INT_MAX);
+    }
+
+    void push(int x) {
+        s.push(x);
+        t.push(std::min(t.top(), x);
+    }
+
+    void pop() {
+        s.pop();
+        t.pop();
+    }
+
+    int top() {
+        return s.top();
+    }
+
+    int min() {
+        return t.top();
+    }
+};
+
+/**
+ * Your MinStack object will be instantiated and called as such:
+ * MinStack* obj = new MinStack();
+ * obj->push(x);
+ * obj->pop();
+ * int param_3 = obj->top();
+ * int param_4 = obj->min();
+ */
+```
+
+用一个辅助栈来存每次的最小值即可。
+
+### 剑指 Offer 32 - I. 从上到下打印二叉树
+
+https://leetcode.cn/problems/cong-shang-dao-xia-da-yin-er-cha-shu-lcof/
+
+从上到下打印出二叉树的每个节点，同一层的节点按照从左到右的顺序打印。
+
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode(int x) : val(x), left(NULL), right(NULL) {}
+ * };
+ */
+class Solution {
+public:
+    vector<int> levelOrder(TreeNode* root) {
+        vector<int> res;
+        queue<TreeNode*> q;
+        if(root) q.push(root);
+
+        while(q.size()) {
+            int len = q.size();
+            while(len--) {
+                auto t = q.front();
+                res.push_back(t->val);
+                q.pop();
+                if(t->left) q.push(t->left);
+                if(t->right) q.push(t->right);
+            }
+        }
+        return res;
+    }
+};
+```
+
+经典层序遍历。
+
+### 剑指 Offer 32 - II. 从上到下打印二叉树 II
+
+https://leetcode.cn/problems/cong-shang-dao-xia-da-yin-er-cha-shu-ii-lcof/
+
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode(int x) : val(x), left(NULL), right(NULL) {}
+ * };
+ */
+class Solution {
+public:
+    vector<vector<int>> levelOrder(TreeNode* root) {
+        vector<vector<int>> res;
+        queue<TreeNode*> q;
+        if(root) q.push(root);
+
+        while(q.size()) {
+            int len = q.size();
+            vector<int> path;
+            while(len--) {
+                auto t = q.front();
+                q.pop();
+                path.push_back(t->val);
+                if(t->left) q.push(t->left);
+                if(t->right) q.push(t->right);
+            }
+            res.push_back(path);
+        }
+        return res;
+    }
+};
+```
+
+同样是层序遍历
+
+### 剑指 Offer 31. 栈的压入、弹出序列
+
+https://leetcode.cn/problems/zhan-de-ya-ru-dan-chu-xu-lie-lcof/
+
+```cpp
+class Solution {
+public:
+    bool validateStackSequences(vector<int>& pushed, vector<int>& popped) {
+        stack<int> stk;
+        int n = pushed.size();
+        for (int i = 0, j = 0; i < n; ++i) {
+            stk.push(pushed[i]);
+            while (!stk.empty() && stk.top() == popped[j]) {
+                stk.pop();
+                j++;
+            }
+        }
+        return stk.empty();
+    }
+};
+```
+
+模拟一下。

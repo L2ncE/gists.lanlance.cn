@@ -1896,3 +1896,81 @@ public:
 ```
 
 注意画图来分析递归时的参数设计。
+
+### 155. 最小栈
+
+https://leetcode.cn/problems/min-stack/
+
+设计一个支持 push ，pop ，top 操作，并能在常数时间内检索到最小元素的栈。
+
+实现 MinStack 类:
+
+MinStack() 初始化堆栈对象。
+void push(int val) 将元素 val 推入堆栈。
+void pop() 删除堆栈顶部的元素。
+int top() 获取堆栈顶部的元素。
+int getMin() 获取堆栈中的最小元素。
+
+```cpp
+class MinStack {
+public:
+    stack<int> s;
+    stack<int> t;
+    MinStack() {
+        t.push(INT_MAX);
+    }
+
+    void push(int val) {
+        s.push(val);
+        t.push(min(t.top(), val));
+    }
+
+    void pop() {
+        s.pop();
+        t.pop();
+    }
+
+    int top() {
+        return s.top();
+    }
+
+    int getMin() {
+        return t.top();
+    }
+};
+
+/**
+ * Your MinStack object will be instantiated and called as such:
+ * MinStack* obj = new MinStack();
+ * obj->push(val);
+ * obj->pop();
+ * int param_3 = obj->top();
+ * int param_4 = obj->getMin();
+ */
+```
+
+用一个辅助栈来进行实现就行。
+
+### 946. 验证栈序列
+
+https://leetcode.cn/problems/validate-stack-sequences/
+
+```cpp
+class Solution {
+public:
+    bool validateStackSequences(vector<int>& pushed, vector<int>& popped) {
+        stack<int> stk;
+        int n = pushed.size();
+        for(int i = 0, j = 0; i < n; i++) {
+            stk.push(pushed[i]);
+            while(!stk.empty() && stk.top() == popped[j]) {
+                stk.pop();
+                j++;
+            }
+        }
+        return stk.empty();
+    }
+};
+```
+
+模拟一下。
