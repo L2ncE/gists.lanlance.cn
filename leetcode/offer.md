@@ -1733,3 +1733,231 @@ public:
 ```
 
 模拟一下。
+
+### 剑指 Offer 32 - III. 从上到下打印二叉树 III
+
+https://leetcode.cn/problems/cong-shang-dao-xia-da-yin-er-cha-shu-iii-lcof/
+
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode(int x) : val(x), left(NULL), right(NULL) {}
+ * };
+ */
+class Solution {
+public:
+    vector<vector<int>> levelOrder(TreeNode* root) {
+        vector<vector<int>> res;
+        queue<TreeNode*> q;
+        if(root) q.push(root);
+        bool flag = true;
+        while(q.size()) {
+            int len = q.size();
+            vector<int> path;
+            while(len--) {
+                auto t = q.front();
+                path.push_back(t->val);
+                q.pop();
+                if(t->left) q.push(t->left);
+                if(t->right) q.push(t->right);
+            }
+            if(flag) {
+                res.push_back(path);
+                flag = false;
+            } else {
+                reverse(path.begin(), path.end());
+                res.push_back(path);
+                flag = true;
+            }
+        }
+        return res;
+    }
+};
+```
+
+层序遍历问题，用一个变量来存当前应该正序输入还是倒序输入。
+
+### 剑指 Offer 33. 二叉搜索树的后序遍历序列
+
+https://leetcode.cn/problems/er-cha-sou-suo-shu-de-hou-xu-bian-li-xu-lie-lcof/
+
+输入一个整数数组，判断该数组是不是某二叉搜索树的后序遍历结果。如果是则返回 true，否则返回 false。假设输入的数组的任意两个数字都互不相同。
+
+```cpp
+class Solution {
+public:
+    bool verifyPostorder(vector<int>& postorder) {
+        return check(postorder, 0, postorder.size() - 1);
+    }
+
+    bool check(vector<int>& postorder, int i, int j) {
+        if(i >= j) return true;
+        int root = postorder[j];
+        int left = i;
+        while(left < j && postorder[left] < root) left++;
+        int right = left;
+        while(right < j && postorder[right] > root) right++;
+        if(right != j) return false;
+        return check(postorder, i, left - 1) && check(postorder, left, j - 1);
+    }
+};
+```
+
+1、先找到根节点元素
+
+2、根据根节点元素找到左子树元素，递归检查左子树是否是 BST
+
+3、根据根节点元素找到右子树元素，递归检查右子树是否是 BST
+
+### 剑指 Offer 34. 二叉树中和为某一值的路径
+
+https://leetcode.cn/problems/er-cha-shu-zhong-he-wei-mou-yi-zhi-de-lu-jing-lcof/
+
+给你二叉树的根节点 root 和一个整数目标和 targetSum ，找出所有 从根节点到叶子节点 路径总和等于给定目标和的路径。
+
+叶子节点 是指没有子节点的节点。
+
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
+public:
+    vector<vector<int>> res;
+    vector<int> path;
+    vector<vector<int>> pathSum(TreeNode* root, int target) {
+        if(!root) return {};
+        dfs(root, target);
+        return res;
+    }
+
+    void dfs(TreeNode* root, int target) {
+        path.push_back(root->val);
+        target -= root->val;
+        if(!root->left && !root->right) {
+            if(!target) res.push_back(path);
+        } else {
+            if(root->left) dfs(root->left, target);
+            if(root->right) dfs(root->right, target);
+        }
+        path.pop_back();
+    }
+};
+```
+
+遍历所有的可能，记得回溯。
+
+### 剑指 Offer 35. 复杂链表的复制
+
+https://leetcode.cn/problems/fu-za-lian-biao-de-fu-zhi-lcof/
+
+请实现 copyRandomList 函数，复制一个复杂链表。在复杂链表中，每个节点除了有一个 next 指针指向下一个节点，还有一个 random 指针指向链表中的任意节点或者 null。
+
+```cpp
+/*
+// Definition for a Node.
+class Node {
+public:
+    int val;
+    Node* next;
+    Node* random;
+
+    Node(int _val) {
+        val = _val;
+        next = NULL;
+        random = NULL;
+    }
+};
+*/
+class Solution {
+public:
+    Node* copyRandomList(Node* head) {
+        if(!head) return NULL;
+        Node* cur = head;
+        unordered_map<Node*, Node*> map;
+        while(cur) {
+            map[cur] = new Node(cur->val);
+            cur = cur->next;
+        }
+        cur = head;
+        while(cur) {
+            map[cur]->next = map[cur->next];
+            map[cur]->random = map[cur->random];
+            cur = cur->next;
+        }
+        return map[head];
+    }
+};
+```
+
+利用哈希表的查询特点，考虑构建 原链表节点 和 新链表对应节点 的键值对映射关系，再遍历构建新链表各节点的 next 和 random 引用指向即可。
+
+### 剑指 Offer 36. 二叉搜索树与双向链表
+
+https://leetcode.cn/problems/er-cha-sou-suo-shu-yu-shuang-xiang-lian-biao-lcof/
+
+输入一棵二叉搜索树，将该二叉搜索树转换成一个排序的循环双向链表。要求不能创建任何新的节点，只能调整树中节点指针的指向。
+
+```cpp
+/*
+// Definition for a Node.
+class Node {
+public:
+    int val;
+    Node* left;
+    Node* right;
+
+    Node() {}
+
+    Node(int _val) {
+        val = _val;
+        left = NULL;
+        right = NULL;
+    }
+
+    Node(int _val, Node* _left, Node* _right) {
+        val = _val;
+        left = _left;
+        right = _right;
+    }
+};
+*/
+class Solution {
+public:
+    Node* head = NULL;
+    Node* pre = NULL;
+    Node* treeToDoublyList(Node* root) {
+        if(!root) return NULL;
+        dfs(root);
+        pre->right = head;
+        head->left = pre;
+        return head;
+    }
+
+    void dfs(Node* root) {
+        if(!root) return;
+        dfs(root->left);
+        if(pre) pre->right = root;
+        else head = root;
+        root->left = pre;
+        pre = root;
+        dfs(root->right);
+    }
+};
+```
+
+1、我们定义两个指针 pre 和 head，pre 指针用于保存中序遍历的前一个节点，head 指针用于记录排序链表的头节点。
+
+2、中序遍历二叉树，因为是中序遍历，所以遍历顺序就是双线链表的建立顺序。我们只需要在中序遍历的过程中，修改每个节点的左右指针，将零散的节点连接成双向循环链表。
