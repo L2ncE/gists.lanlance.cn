@@ -1961,3 +1961,118 @@ public:
 1、我们定义两个指针 pre 和 head，pre 指针用于保存中序遍历的前一个节点，head 指针用于记录排序链表的头节点。
 
 2、中序遍历二叉树，因为是中序遍历，所以遍历顺序就是双线链表的建立顺序。我们只需要在中序遍历的过程中，修改每个节点的左右指针，将零散的节点连接成双向循环链表。
+
+### 剑指 Offer 38. 字符串的排列
+
+https://leetcode.cn/problems/zi-fu-chuan-de-pai-lie-lcof/
+
+```cpp
+class Solution {
+public:
+    vector<string> ans;
+    vector<bool> st;
+    string path;
+    vector<string> permutation(string s) {
+        st = vector<bool>(s.size());
+        dfs(s, 0);
+        return ans;
+    }
+
+    void dfs(string s, int u) {
+        if(u == s.size()) {
+            ans.push_back(path);
+            return;
+        }
+
+        unordered_set<int> S;
+
+        for(int i = 0; i < s.size(); i++){
+            if(!st[i]) {
+                if(S.count(s[i])) continue;
+                S.insert(s[i]);
+                st[i] = true;
+                path.push_back(s[i]);
+                dfs(s, u + 1);
+                st[i] = false;
+                path.pop_back();
+            }
+        }
+    }
+};
+```
+
+和全排列一样的思路。
+
+### 剑指 Offer 39. 数组中出现次数超过一半的数字
+
+https://leetcode.cn/problems/shu-zu-zhong-chu-xian-ci-shu-chao-guo-yi-ban-de-shu-zi-lcof/
+
+```cpp
+class Solution {
+public:
+    int majorityElement(vector<int>& nums) {
+        int len = nums.size() / 2;
+        unordered_map<int, int> S;
+        for(int i = 0; i < nums.size(); i++) {
+            S[nums[i]]++;
+            if(S[nums[i]] > len) return nums[i];
+        }
+        return 0;
+    }
+};
+```
+
+按题意使用哈希表即可。
+
+### 剑指 Offer 40. 最小的 k 个数
+
+https://leetcode.cn/problems/zui-xiao-de-kge-shu-lcof/
+
+```cpp
+class Solution {
+public:
+    vector<int> getLeastNumbers(vector<int>& arr, int k) {
+        vector<int> res;
+        sort(arr.begin(), arr.end());
+        for(int i = 0; i < k; i++) res.push_back(arr[i]);
+        return res;
+    }
+};
+```
+
+建议使用快排。
+
+### 剑指 Offer 41. 数据流中的中位数
+
+https://leetcode.cn/problems/shu-ju-liu-zhong-de-zhong-wei-shu-lcof/
+
+```cpp
+class MedianFinder {
+public:
+    priority_queue<int, vector<int>, less<int>> left;
+    priority_queue<int, vector<int>, greater<int>> right;
+    /** initialize your data structure here. */
+    MedianFinder() {
+    }
+
+    void addNum(int num) {
+        // 右侧堆的每一个值一定是来源于左侧堆，这样才能保证右侧堆的每一个元素都比左侧堆大
+        left.push(num);
+        right.push(left.top());
+        left.pop();
+        if (right.size() > left.size()){
+            left.push(right.top());
+            right.pop();
+        }
+    }
+
+    double findMedian() {
+        if (left.size() > right.size())
+            return left.top();
+        else
+            return (left.top() + right.top()) / 2.0;
+    }
+};
+```
+
+左侧堆的数量大于等于右侧堆，等于时表示数列偶数个，中位数就是左侧数的最大值和右侧数的最小值求平均，大于时表示数列奇数个，左侧堆的 top 就是答案。

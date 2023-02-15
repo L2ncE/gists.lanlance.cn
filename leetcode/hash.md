@@ -278,3 +278,24 @@ public:
 ```
 
 用一个哈希表存两个数的和，再遍历另外两个数看是不是相反数，总和为 0 时就把哈希表中存的个数加到答案里面。
+
+### 169. 多数元素
+
+https://leetcode.cn/problems/majority-element/
+
+```cpp
+class Solution {
+public:
+    int majorityElement(vector<int>& nums) {
+        int len = nums.size() / 2;
+        unordered_map<int, int> S;
+        for(int i = 0; i < nums.size(); i++) {
+            S[nums[i]]++;
+            if(S[nums[i]] > len) return nums[i];
+        }
+        return 0;
+    }
+};
+```
+
+按题意使用哈希即可。
