@@ -2076,3 +2076,50 @@ public:
 ```
 
 左侧堆的数量大于等于右侧堆，等于时表示数列偶数个，中位数就是左侧数的最大值和右侧数的最小值求平均，大于时表示数列奇数个，左侧堆的 top 就是答案。
+
+### 剑指 Offer 19. 正则表达式匹配
+
+https://leetcode.cn/problems/zheng-ze-biao-da-shi-pi-pei-lcof/
+
+请实现一个函数用来匹配包含'. '和 _ 的正则表达式。模式中的字符'.'表示任意一个字符，而 _ 表示它前面的字符可以出现任意次（含 0 次）。在本题中，匹配是指字符串的所有字符匹配整个模式。例如，字符串"aaa"与模式"a.a"和"ab\*ac\*a"匹配，但与"aa.a"和"ab\*a"均不匹配。
+
+```cpp
+class Solution {
+public:
+    // 备忘录
+    vector<vector<int>> memo;
+
+    bool isMatch(string s, string p) {
+        int m = s.size(), n = p.size();
+        memo = vector<vector<int>>(m, vector<int>(n, -1));
+        // 指针 i，j 从索引 0 开始移动
+        return dp(s, 0, p, 0);
+    }
+
+    /* 计算 p[j..] 是否匹配 s[i..] */
+    bool dp(string& s, int i, string& p, int j) {
+        int m = s.size(), n = p.size();
+        // base case
+        if (j == n) return i == m;
+        if (i == m) {
+            if ((n - j) % 2 == 1) return false;
+            for (; j < n - 1; j += 2) if (p[j + 1] != '*') return false;
+            return true;
+        }
+
+        // 查备忘录，防止重复计算
+        if (memo[i][j] != -1) return memo[i][j];
+        bool res = false;
+        if (s[i] == p[j] || p[j] == '.') {
+            if (j < n - 1 && p[j + 1] == '*') res = dp(s, i, p, j + 2) || dp(s, i + 1, p, j);
+            else res = dp(s, i + 1, p, j + 1);
+        } else {
+            if (j < n - 1 && p[j + 1] == '*') res = dp(s, i, p, j + 2);
+            else res = false;
+        }
+        // 将当前结果记入备忘录
+        memo[i][j] = res;
+        return res;
+    }
+};
+```
