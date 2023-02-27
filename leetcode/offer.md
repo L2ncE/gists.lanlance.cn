@@ -2123,3 +2123,45 @@ public:
     }
 };
 ```
+
+### 剑指 Offer 42. 连续子数组的最大和
+
+https://leetcode.cn/problems/lian-xu-zi-shu-zu-de-zui-da-he-lcof/
+
+输入一个整型数组，数组中的一个或连续多个整数组成一个子数组。求所有子数组的和的最大值。
+
+要求时间复杂度为 O(n)。
+
+```cpp
+class Solution {
+public:
+    int maxSubArray(vector<int>& nums) {
+        int res = INT_MIN;
+        for(int i = 0, last = 0; i < nums.size(); i++) {
+            last = nums[i] + max(0, last);
+            res = max(res, last);
+        }
+        return res;
+    }
+};
+```
+
+简单 dp。
+
+### 剑指 Offer 50. 第一个只出现一次的字符
+
+https://leetcode.cn/problems/di-yi-ge-zhi-chu-xian-yi-ci-de-zi-fu-lcof/
+
+在字符串 s 中找出第一个只出现一次的字符。如果没有，返回一个单空格。 s 只包含小写字母。
+
+```cpp
+class Solution {
+public:
+    char firstUniqChar(string s) {
+        unordered_map<char, int> h;
+        for(int i = 0; i < s.size(); i++) h[s[i]]++;
+        for(int i = 0; i < s.size(); i++) if(h[s[i]] == 1) return s[i];
+        return ' ';
+    }
+};
+```
