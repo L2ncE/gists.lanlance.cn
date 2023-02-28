@@ -2165,3 +2165,49 @@ public:
     }
 };
 ```
+
+### 剑指 Offer 51. 数组中的逆序对
+
+https://leetcode.cn/problems/shu-zu-zhong-de-ni-xu-dui-lcof/
+
+在数组中的两个数字，如果前面一个数字大于后面的数字，则这两个数字组成一个逆序对。输入一个数组，求出这个数组中的逆序对的总数。
+
+```cpp
+class Solution {
+public:
+    vector<int> tmp;
+    int count = 0;
+    int reversePairs(vector<int>& nums) {
+        if (!nums.size()) return 0;
+        tmp = vector<int>(nums.size());
+        sort(nums, 0, nums.size() - 1);
+        return count;
+    }
+
+    void sort(vector<int>& nums, int l, int r) {
+        if(l == r) return;
+        int mid = (l + r) / 2;
+        sort(nums, l, mid);
+        sort(nums, mid + 1, r);
+        merge(nums, l, mid, r);
+    }
+
+    void merge(vector<int>& nums, int l, int mid, int r) {
+        for(int i = l; i <= r; i++) tmp[i] = nums[i];
+        int end = mid + 1;
+        for(int i = l; i <= mid; i++) {
+            while(end <= r && (long)nums[i] > (long)nums[end]) end++;
+            count += end - (mid + 1);
+        }
+        int i = l, j = mid + 1;
+        for(int p = l; p <= r; p++) {
+            if(i == mid + 1) nums[p] = tmp[j++];
+            else if(j == r + 1) nums[p] = tmp[i++];
+            else if(tmp[i] > tmp[j]) nums[p] = tmp[j++];
+            else nums[p] = tmp[i++];
+        }
+    }
+};
+```
+
+归并排序

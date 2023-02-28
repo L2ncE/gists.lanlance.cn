@@ -845,3 +845,89 @@ public:
 ```
 
 按照模板写即可，值得一提的是这里处理缩小的时候和模板有所不同，根据题型自行适配。
+
+### 912. 排序数组
+
+https://leetcode.cn/problems/sort-an-array/
+
+给你一个整数数组 nums，请你将该数组升序排列。
+
+```cpp
+class Solution {
+public:
+    vector<int> tmp;
+    vector<int> sortArray(vector<int>& nums) {
+        tmp = vector<int>(nums.size());
+        Sort(nums, 0, nums.size() - 1);
+        return nums;
+    }
+
+    void Sort(vector<int>& nums, int l, int r) {
+        if(l == r) return;
+        int mid = (l + r) / 2;
+        Sort(nums, l, mid);
+        Sort(nums, mid + 1, r);
+        merge(nums, l, mid, r);
+    }
+
+    void merge(vector<int>& nums, int l, int mid, int r) {
+        for(int i = l; i <= r; i++) tmp[i] = nums[i];
+        int i = l, j = mid + 1;
+        for (int p = l; p <= r; p++) {
+            if (i == mid + 1) nums[p] = tmp[j++];
+            else if (j == r + 1) nums[p] = tmp[i++];
+            else if (tmp[i] > tmp[j]) nums[p] = tmp[j++];
+            else nums[p] = tmp[i++];
+        }
+    }
+};
+```
+
+用归并排序解决。
+
+### 493. 翻转对
+
+https://leetcode.cn/problems/reverse-pairs/
+
+给定一个数组  nums ，如果  i < j  且  nums[i] > 2\*nums[j]  我们就将  (i, j)  称作一个重要翻转对。
+
+你需要返回给定数组中的重要翻转对的数量。
+
+```cpp
+class Solution {
+public:
+    vector<int> tmp;
+    int count = 0;
+    int reversePairs(vector<int>& nums) {
+        tmp = vector<int>(nums.size());
+        sort(nums, 0, nums.size() - 1);
+        return count;
+    }
+
+    void sort(vector<int>& nums, int l, int r) {
+        if(l == r) return;
+        int mid = (l + r) / 2;
+        sort(nums, l, mid);
+        sort(nums, mid + 1, r);
+        merge(nums, l, mid, r);
+    }
+
+    void merge(vector<int>& nums, int l, int mid, int r) {
+        for(int i = l; i <= r; i++) tmp[i] = nums[i];
+        int end = mid + 1;
+        for(int i = l; i <= mid; i++) {
+            while(end <= r && (long)nums[i] > (long)nums[end] * 2) end++;
+            count += end - (mid + 1);
+        }
+        int i = l, j = mid + 1;
+        for(int p = l; p <= r; p++) {
+            if(i == mid + 1) nums[p] = tmp[j++];
+            else if(j == r + 1) nums[p] = tmp[i++];
+            else if(tmp[i] > tmp[j]) nums[p] = tmp[j++];
+            else nums[p] = tmp[i++];
+        }
+    }
+};
+```
+
+归并排序加几行代码即可。
