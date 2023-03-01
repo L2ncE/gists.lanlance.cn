@@ -536,3 +536,30 @@ public:
 ```
 
 列出状态转移方程 `dp[i] = max(dp[i], max(j * (i - j), j * dp[i - j]))` 就非常简单了。
+
+### 64. 最小路径和
+
+https://leetcode.cn/problems/minimum-path-sum/
+
+```cpp
+class Solution {
+public:
+    vector<vector<int>>memo;
+    int minPathSum(vector<vector<int>>& grid) {
+        int m = grid.size();
+        int n = grid[0].size();
+        memo = vector<vector<int>>(m, vector<int>(n, -1));
+        return dp(grid, m - 1, n - 1);
+    }
+
+    int dp(vector<vector<int>>& grid, int i, int j) {
+        if(i == 0 && j == 0) return grid[0][0];
+        if(i < 0 || j < 0) return INT_MAX;
+        if(memo[i][j] != -1) return memo[i][j];
+        memo[i][j] =  min(dp(grid, i - 1, j), dp(grid, i, j - 1)) + grid[i][j];
+        return memo[i][j];
+    }
+};
+```
+
+从左上角位置 (0, 0) 走到位置 (i, j) 的最小路径和为 dp(grid, i, j)，还可以用备忘录优化一下执行效率。

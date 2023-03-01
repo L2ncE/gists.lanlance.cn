@@ -2211,3 +2211,82 @@ public:
 ```
 
 归并排序
+
+### 剑指 Offer 48. 最长不含重复字符的子字符串
+
+https://leetcode.cn/problems/zui-chang-bu-han-zhong-fu-zi-fu-de-zi-zi-fu-chuan-lcof/?favorite=xb9nqhhg
+
+```cpp
+class Solution {
+public:
+    int lengthOfLongestSubstring(string s) {
+        unordered_map<char, int> h;
+        int res = 0;
+        for(int i = 0, j = 0; i < s.size(); i++) {
+            h[s[i]]++;
+            while(h[s[i]] > 1) h[s[j++]]--;
+            res = max(res, i - j + 1);
+        }
+        return res;
+    }
+};
+```
+
+双指针加哈希表解决。
+
+### 剑指 Offer 49. 丑数
+
+https://leetcode.cn/problems/chou-shu-lcof/
+
+我们把只包含质因子 2、3 和 5 的数称作丑数（Ugly Number）。求按从小到大的顺序的第 n 个丑数。
+
+```cpp
+class Solution {
+public:
+    int nthUglyNumber(int n) {
+        int p1 = 1, p2 = 1, p3 = 1;
+        int pd1 = 1, pd2 = 1, pd3 = 1;
+        vector<int> ugly(n + 1);
+        int p = 1;
+        while(p <= n) {
+            int minn = min(min(pd1, pd2), pd3);
+            ugly[p++] = minn;
+            if(pd1 == minn) pd1 = 2 * ugly[p1++];
+            if(pd2 == minn) pd2 = 3 * ugly[p2++];
+            if(pd3 == minn) pd3 = 5 * ugly[p3++];
+        }
+        return ugly[n];
+    }
+};
+```
+
+我们用 p1, p2, p3 分别代表三条丑数链表上的指针，用 pd1, pd2, pd3 代表丑数链表上节点的值，用 ugly 数组记录有序链表合并之后的结果。
+
+### 剑指 Offer 47. 礼物的最大价值
+
+https://leetcode.cn/problems/li-wu-de-zui-da-jie-zhi-lcof/
+
+在一个 m\*n 的棋盘的每一格都放有一个礼物，每个礼物都有一定的价值（价值大于 0）。你可以从棋盘的左上角开始拿格子里的礼物，并每次向右或者向下移动一格、直到到达棋盘的右下角。给定一个棋盘及其上面的礼物的价值，请计算你最多能拿到多少价值的礼物？
+
+```cpp
+class Solution {
+public:
+    vector<vector<int>> memo;
+    int maxValue(vector<vector<int>>& grid) {
+        int m = grid.size();
+        int n = grid[0].size();
+        memo = vector<vector<int>> (m, vector<int>(n, -1));
+        return dp(grid, m - 1, n - 1);
+    }
+
+    int dp(vector<vector<int>>& grid, int i, int j) {
+        if(i == 0 && j == 0) return grid[0][0];
+        if(i < 0 || j < 0) return INT_MIN;
+        if(memo[i][j] != -1) return memo[i][j];
+        memo[i][j] = max(dp(grid, i - 1, j), dp(grid, i, j - 1)) + grid[i][j];
+        return memo[i][j];
+    }
+};
+```
+
+从左上角位置 (0, 0) 走到位置 (i, j) 的最大路径和为 dp(grid, i, j)，还可以用备忘录优化一下执行效率。
