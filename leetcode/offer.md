@@ -2290,3 +2290,157 @@ public:
 ```
 
 从左上角位置 (0, 0) 走到位置 (i, j) 的最大路径和为 dp(grid, i, j)，还可以用备忘录优化一下执行效率。
+
+### 剑指 Offer 46. 把数字翻译成字符串
+
+https://leetcode.cn/problems/ba-shu-zi-fan-yi-cheng-zi-fu-chuan-lcof/
+
+给定一个数字，我们按照如下规则把它翻译为字符串：0 翻译成 “a” ，1 翻译成 “b”，……，11 翻译成 “l”，……，25 翻译成 “z”。一个数字可能有多个翻译。请编程实现一个函数，用来计算一个数字有多少种不同的翻译方法。
+
+```cpp
+class Solution {
+public:
+    int translateNum(int num) {
+        string s = to_string(num);
+        int n = s.size();
+        if(n < 1) return 0;
+        vector<int>dp(n + 1);
+        dp[0] = 1, dp[1] = 1;
+        for(int i = 2; i <= n; i++) {
+            char c = s[i - 1], d = s[i - 2];
+            if(c >= '0' && c <= '9') dp[i] += dp[i - 1];
+            if(d == '1' || d == '2' && c <= '5') dp[i] += dp[i - 2];
+        }
+        return dp[n];
+    }
+};
+```
+
+### 剑指 Offer 44. 数字序列中某一位的数字
+
+https://leetcode.cn/problems/shu-zi-xu-lie-zhong-mou-yi-wei-de-shu-zi-lcof/
+
+数字以 0123456789101112131415…的格式序列化到一个字符序列中。在这个序列中，第 5 位（从下标 0 开始计数）是 5，第 13 位是 1，第 19 位是 4，等等。
+
+请写一个函数，求任意第 n 位对应的数字。
+
+```cpp
+class Solution {
+public:
+    int findNthDigit(int n) {
+        int digit = 1;
+        long base = 1;
+
+        while(n > 9 * base * digit) {
+            n -= 9 * base * digit;
+            base *= 10;
+            digit++;
+        }
+
+        long val = base + (n - 1) / digit;
+        int index = (n - 1) % digit;
+        string s = to_string(val);
+        return s[index] - '0';
+    }
+};
+```
+
+找数学规律，一位数有几个？1~9 共 9 _ 1 = 9 个。共几位？共 1 _ 9 = 9 位。
+
+二位数有几个？10~99 共 9 _ 10 = 90 个。共几位？共 2 _ 90 = 180 位。
+
+三位数有几个？100~999 共 9 _ 100 = 900 个。共几位？共 3 _ 900 = 2700 位。
+
+以此类推，我们可以通过这个规律推断第 n 位的数字到底是什么。所以这道题的难点在于如何把上述规律写成算法代码。
+
+### 剑指 Offer 53 - II. 0 ～ n-1 中缺失的数字
+
+https://leetcode.cn/problems/que-shi-de-shu-zi-lcof/
+
+一个长度为 n-1 的递增排序数组中的所有数字都是唯一的，并且每个数字都在范围 0 ～ n-1 之内。在范围 0 ～ n-1 内的 n 个数字中有且只有一个数字不在该数组中，请找出这个数字。
+
+```cpp
+class Solution {
+public:
+    int missingNumber(vector<int>& nums) {
+        int l = 0, r = nums.size();
+        while(l < r) {
+            int mid = (l + r) / 2;
+            if(nums[mid] != mid) r = mid;
+            else l = mid + 1;
+        }
+        return l;
+    }
+};
+```
+
+二分就完事了。
+
+### 剑指 Offer 54. 二叉搜索树的第 k 大节点
+
+https://leetcode.cn/problems/er-cha-sou-suo-shu-de-di-kda-jie-dian-lcof/
+
+给定一棵二叉搜索树，请找出其中第 k 大的节点的值。
+
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode(int x) : val(x), left(NULL), right(NULL) {}
+ * };
+ */
+class Solution {
+public:
+    int res = 0, rank = 0;
+    int kthLargest(TreeNode* root, int k) {
+        dfs(root, k);
+        return res;
+    }
+
+    void dfs(TreeNode* root, int k) {
+        if(!root) return;
+        dfs(root->right, k);
+        rank++;
+        if(k == rank) {
+            res = root->val;
+            return;
+        }
+        dfs(root->left, k);
+    }
+};
+```
+
+逆向的中序遍历可以得到从大到小的值。
+
+### 剑指 Offer 43. 1 ～ n 整数中 1 出现的次数
+
+https://leetcode.cn/problems/1nzheng-shu-zhong-1chu-xian-de-ci-shu-lcof/
+
+输入一个整数 n ，求 1 ～ n 这 n 个整数的十进制表示中 1 出现的次数。
+
+例如，输入 12，1 ～ 12 这些整数中包含 1 的数字有 1、10、11 和 12，1 一共出现了 5 次。
+
+```cpp
+class Solution {
+public:
+    int countDigitOne(int n) {
+        long digit = 1, res = 0;
+        int high = n / 10, cur = n % 10, low = 0;
+        while(high != 0 || cur != 0) {
+            if(cur == 0) res += high * digit;
+            else if(cur == 1) res += high * digit + low + 1;
+            else res += (high + 1) * digit;
+            low += cur * digit;
+            cur = high % 10;
+            high /= 10;
+            digit *= 10;
+        }
+        return res;
+    }
+};
+```
+
+背就完事了。

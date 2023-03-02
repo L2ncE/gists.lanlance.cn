@@ -71,3 +71,38 @@ public:
 ```
 
 我们用 p1, p2, p3 分别代表三条丑数链表上的指针，用 pd1, pd2, pd3 代表丑数链表上节点的值，用 ugly 数组记录有序链表合并之后的结果。
+
+### 400. 第 N 位数字
+
+https://leetcode.cn/problems/nth-digit/
+
+给你一个整数 n ，请你在无限的整数序列 [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, ...] 中找出并返回第 n 位上的数字。
+
+```cpp
+class Solution {
+public:
+    int findNthDigit(int n) {
+        int digit = 1;
+        long base = 1;
+
+        while(n > 9 * base * digit) {
+            n -= 9 * base * digit;
+            base *= 10;
+            digit++;
+        }
+
+        long val = base + (n - 1) / digit;
+        int index = (n - 1) % digit;
+        string s = to_string(val);
+        return s[index] - '0';
+    }
+};
+```
+
+找数学规律，一位数有几个？1~9 共 9 _ 1 = 9 个。共几位？共 1 _ 9 = 9 位。
+
+二位数有几个？10~99 共 9 _ 10 = 90 个。共几位？共 2 _ 90 = 180 位。
+
+三位数有几个？100~999 共 9 _ 100 = 900 个。共几位？共 3 _ 900 = 2700 位。
+
+以此类推，我们可以通过这个规律推断第 n 位的数字到底是什么。所以这道题的难点在于如何把上述规律写成算法代码。

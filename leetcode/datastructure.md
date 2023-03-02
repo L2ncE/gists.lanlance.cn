@@ -1974,3 +1974,44 @@ public:
 ```
 
 模拟一下。
+
+### 230. 二叉搜索树中第 K 小的元素
+
+https://leetcode.cn/problems/kth-smallest-element-in-a-bst/
+
+给定一个二叉搜索树的根节点 root ，和一个整数 k ，请你设计一个算法查找其中第 k 个最小元素（从 1 开始计数）。
+
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
+public:
+    int res = 0, idx = 0;
+    int kthSmallest(TreeNode* root, int k) {
+        dfs(root, k);
+        return res;
+    }
+
+    void dfs(TreeNode* root, int k) {
+        if(!root) return;
+        dfs(root->left, k);
+        idx++;
+        if(idx == k) {
+            res = root->val;
+            return;
+        }
+        dfs(root->right, k);
+    }
+};
+```
+
+中序遍历即可。
