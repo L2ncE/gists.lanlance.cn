@@ -84,3 +84,24 @@ public:
 
 按照定义，计算 x 的 n 次方是将 nn 个 x 连乘，效率比较低，会超时。因为乘法具有结合律，考虑每次将一部分连乘批量计算好，作为最终答案的一部分。这就可以将 n 进行二进制拆分，若 n 的二进制位的第 k 位是 1，则 ans 可以乘上 x2k。
 而计算 x2k，只需每次将自身做平方即可。
+
+### 136. 只出现一次的数字
+
+https://leetcode.cn/problems/single-number/
+
+给你一个 非空 整数数组 nums ，除了某个元素只出现一次以外，其余每个元素均出现两次。找出那个只出现了一次的元素。
+
+你必须设计并实现线性时间复杂度的算法来解决此问题，且该算法只使用常量额外空间。
+
+```cpp
+class Solution {
+public:
+    int singleNumber(vector<int>& nums) {
+        int res = 0;
+        for(auto i : nums) res ^= i;
+        return res;
+    }
+};
+```
+
+进行异或操作。

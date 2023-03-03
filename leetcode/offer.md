@@ -2444,3 +2444,66 @@ public:
 ```
 
 背就完事了。
+
+### 剑指 Offer 55 - II. 平衡二叉树
+
+https://leetcode.cn/problems/ping-heng-er-cha-shu-lcof/
+
+输入一棵二叉树的根节点，判断该树是不是平衡二叉树。如果某二叉树中任意节点的左右子树的深度相差不超过 1，那么它就是一棵平衡二叉树。
+
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode(int x) : val(x), left(NULL), right(NULL) {}
+ * };
+ */
+class Solution {
+public:
+    bool ans;
+    bool isBalanced(TreeNode* root) {
+        if(!root) return true;
+        ans = true;
+        dfs(root);
+        return ans;
+    }
+
+    int dfs(TreeNode* root) {
+        if(!root) return 0;
+        int l = dfs(root->left);
+        int r = dfs(root->right);
+        if(abs(l - r) > 1) ans = false;
+        return max(l, r) + 1;
+    }
+};
+```
+
+### 剑指 Offer 56 - I. 数组中数字出现的次数
+
+https://leetcode.cn/problems/shu-zu-zhong-shu-zi-chu-xian-de-ci-shu-lcof/
+
+一个整型数组 nums 里除两个数字之外，其他数字都出现了两次。请写程序找出这两个只出现一次的数字。要求时间复杂度是 O(n)，空间复杂度是 O(1)。
+
+```cpp
+class Solution {
+public:
+    vector<int> singleNumbers(vector<int>& nums) {
+        int ret = 0;
+        for (int n : nums)
+            ret ^= n;
+        int div = 1;
+        while ((div & ret) == 0)
+            div <<= 1;
+        int a = 0, b = 0;
+        for (int n : nums)
+            if (div & n)
+                a ^= n;
+            else
+                b ^= n;
+        return vector<int>{a, b};
+    }
+};
+```
