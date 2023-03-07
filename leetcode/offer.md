@@ -2530,3 +2530,80 @@ public:
 ```
 
 有限自动状态机。
+
+### 剑指 Offer II 031. 最近最少使用缓存
+
+https://leetcode.cn/problems/OrIXps/
+
+运用所掌握的数据结构，设计和实现一个   LRU (Least Recently Used，最近最少使用) 缓存机制 。
+
+实现 LRUCache 类：
+
+LRUCache(int capacity) 以正整数作为容量  capacity 初始化 LRU 缓存
+int get(int key) 如果关键字 key 存在于缓存中，则返回关键字的值，否则返回 -1 。
+void put(int key, int value)  如果关键字已经存在，则变更其数据值；如果关键字不存在，则插入该组「关键字-值」。当缓存容量达到上限时，它应该在写入新数据之前删除最久未使用的数据值，从而为新的数据值留出空间。
+
+```cpp
+class LRUCache {
+public:
+    struct Node {
+        int key, val;
+        Node *left, *right;
+        Node(int _key, int _val): key(_key), val(_val), left(NULL), right(NULL) {}
+    }*L, *R;
+    unordered_map<int, Node*> hash;
+    int n;
+
+    void remove(Node* p) {
+        p->left->right = p->right;
+        p->right->left = p->left;
+    }
+
+    void insert(Node* p) {
+        p->left = L;
+        p->right = L->right;
+        L->right->left = p;
+        L->right = p;
+    }
+
+    LRUCache(int capacity) {
+        n = capacity;
+        L = new Node(-1, -1), R = new Node(-1, -1);
+        L->right = R, R->left = L;
+    }
+
+    int get(int key) {
+        if(hash.count(key) == 0) return -1;
+        auto p = hash[key];
+        remove(p);
+        insert(p);
+        return p->val;
+    }
+
+    void put(int key, int value) {
+        if(hash.count(key)) {
+            auto p = hash[key];
+            p->val = value;
+            remove(p);
+            insert(p);
+        } else {
+            if(n == hash.size()) {
+                auto p = R->left;
+                remove(p);
+                hash.erase(p->key);
+                delete(p);
+            }
+            auto p = new Node(key, value);
+            insert(p);
+            hash[key] = p;
+        }
+    }
+};
+
+/**
+ * Your LRUCache object will be instantiated and called as such:
+ * LRUCache* obj = new LRUCache(capacity);
+ * int param_1 = obj->get(key);
+ * obj->put(key,value);
+ */
+```

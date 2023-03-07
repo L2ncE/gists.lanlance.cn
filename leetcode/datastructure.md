@@ -2015,3 +2015,128 @@ public:
 ```
 
 中序遍历即可。
+
+### 146. LRU 缓存
+
+https://leetcode.cn/problems/lru-cache/
+
+请你设计并实现一个满足   LRU (最近最少使用) 缓存 约束的数据结构。
+实现 LRUCache 类：
+LRUCache(int capacity) 以 正整数 作为容量  capacity 初始化 LRU 缓存
+int get(int key) 如果关键字 key 存在于缓存中，则返回关键字的值，否则返回 -1 。
+void put(int key, int value)  如果关键字  key 已经存在，则变更其数据值  value ；如果不存在，则向缓存中插入该组  key-value 。如果插入操作导致关键字数量超过  capacity ，则应该 逐出 最久未使用的关键字。
+函数 get 和 put 必须以 O(1) 的平均时间复杂度运行。
+
+```cpp
+class LRUCache {
+public:
+    struct Node {
+        int val, key;
+        Node *left, *right;
+        Node(int _key, int _val): key(_key), val(_val), left(NULL), right(NULL) {}
+    }*L, *R;
+    unordered_map<int, Node*> hash;
+    int n;
+
+    void remove(Node* p) {
+        p->left->right = p->right;
+        p->right->left = p->left;
+    }
+
+    void insert(Node* p) {
+        p->left = L;
+        p->right = L->right;
+        L->right->left = p;
+        L->right = p;
+    }
+
+    LRUCache(int capacity) {
+        n = capacity;
+        L = new Node(-1, -1), R = new Node(-1, -1);
+        L->right = R, R->left = L;
+    }
+
+    int get(int key) {
+        if(hash.count(key) == 0) return -1;
+        auto p = hash[key];
+        remove(p);
+        insert(p);
+        return p->val;
+    }
+
+    void put(int key, int value) {
+        if(hash.count(key)) {
+            auto p = hash[key];
+            p->val = value;
+            remove(p);
+            insert(p);
+        } else {
+            if(hash.size() == n) {
+                auto p = R->left;
+                remove(p);
+                hash.erase(p->key);
+                delete(p);
+            }
+            auto p = new Node(key, value);
+            hash[key] = p;
+            insert(p);
+        }
+    }
+};
+
+/**
+ * Your LRUCache object will be instantiated and called as such:
+ * LRUCache* obj = new LRUCache(capacity);
+ * int param_1 = obj->get(key);
+ * obj->put(key,value);
+ */
+```
+
+### 25. K 个一组翻转链表
+
+https://leetcode.cn/problems/reverse-nodes-in-k-group/
+
+给你链表的头节点 head ，每  k  个节点一组进行翻转，请你返回修改后的链表。
+
+k 是一个正整数，它的值小于或等于链表的长度。如果节点总数不是  k  的整数倍，那么请将最后剩余的节点保持原有顺序。
+
+你不能只是单纯的改变节点内部的值，而是需要实际进行节点交换。
+
+```cpp
+/**
+ * Definition for singly-linked list.
+ * struct ListNode {
+ *     int val;
+ *     ListNode *next;
+ *     ListNode() : val(0), next(nullptr) {}
+ *     ListNode(int x) : val(x), next(nullptr) {}
+ *     ListNode(int x, ListNode *next) : val(x), next(next) {}
+ * };
+ */
+class Solution {
+public:
+    ListNode* reverseKGroup(ListNode* head, int k) {
+        if(!head) return head;
+        auto a = head, b = head;
+        for(int i = 0; i < k; i++) {
+            if(b == NULL) return head;
+            b = b->next;
+        }
+        auto newHead = reverseNode(a, b);
+        a->next = reverseKGroup(b, k);
+        return newHead;
+    }
+
+    ListNode* reverseNode(ListNode* n, ListNode* m) {
+        auto a = n, b = n->next;
+        while(b != m) {
+            auto t = b->next;
+            b->next = a;
+            a = b;
+            b = t;
+        }
+        n->next = m;
+        return a;
+    }
+};
+```
