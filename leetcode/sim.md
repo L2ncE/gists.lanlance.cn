@@ -91,3 +91,37 @@ public:
 ```
 
 使用偏移量来做，模拟？狗都不写！
+
+### 415. 字符串相加
+
+https://leetcode.cn/problems/add-strings/
+
+给定两个字符串形式的非负整数  num1 和 num2 ，计算它们的和并同样以字符串形式返回。
+
+你不能使用任何內建的用于处理大整数的库（比如 BigInteger），  也不能直接将输入的字符串转换为整数形式。
+
+```cpp
+class Solution {
+public:
+    vector<int> add(vector<int>& A, vector<int>& B) {
+        vector<int> C;
+        for(int i = 0, t = 0; i < A.size() || i < B.size() || t; i++) {
+            if(i < A.size()) t += A[i];
+            if(i < B.size()) t += B[i];
+            C.push_back(t % 10);
+            t /= 10;
+        }
+        return C;
+    }
+
+    string addStrings(string num1, string num2) {
+        vector<int> A, B;
+        for(int i = num1.size() - 1; i >= 0; i--) A.push_back(num1[i] - '0');
+        for(int i = num2.size() - 1; i >= 0; i--) B.push_back(num2[i] - '0');
+        auto C = add(A, B);
+        string c;
+        for(int i = C.size() - 1; i >= 0; i--) c += to_string(C[i]);
+        return c;
+    }
+};
+```

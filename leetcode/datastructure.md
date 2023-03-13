@@ -2186,3 +2186,42 @@ public:
 ```
 
 层序遍历加一个隔一行翻转即可。
+
+### 92. 反转链表 II
+
+https://leetcode.cn/problems/reverse-linked-list-ii/
+
+给你单链表的头指针 head 和两个整数  left 和 right ，其中  left <= right 。请你反转从位置 left 到位置 right 的链表节点，返回 反转后的链表 。
+
+```cpp
+/**
+ * Definition for singly-linked list.
+ * struct ListNode {
+ *     int val;
+ *     ListNode *next;
+ *     ListNode() : val(0), next(nullptr) {}
+ *     ListNode(int x) : val(x), next(nullptr) {}
+ *     ListNode(int x, ListNode *next) : val(x), next(next) {}
+ * };
+ */
+class Solution {
+public:
+    ListNode* reverseBetween(ListNode* head, int left, int right) {
+        if(left == right || !head) return head;
+        auto dummy = new ListNode();
+        dummy->next = head;
+        auto p = dummy;
+        for(int i = 0; i < left - 1; i++) p = p->next;
+        auto a = p, b = a->next, c = b->next;
+        for(int i = 0; i < right -left; i++) {
+            auto t = c->next;
+            c->next = b;
+            b = c;
+            c = t;
+        }
+        a->next->next = c;
+        a->next = b;
+        return dummy->next;
+    }
+};
+```

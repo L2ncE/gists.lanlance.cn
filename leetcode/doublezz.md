@@ -987,3 +987,26 @@ public:
     }
 };
 ```
+
+### 42. 接雨水
+
+https://leetcode.cn/problems/trapping-rain-water/
+
+给定  n 个非负整数表示每个宽度为 1 的柱子的高度图，计算按此排列的柱子，下雨之后能接多少雨水。
+
+```cpp
+class Solution {
+public:
+    int trap(vector<int>& height) {
+        int l = 0, r = height.size() - 1;
+        int l_max = 0, r_max = 0, res = 0;
+        while(l < r) {
+            l_max = max(l_max, height[l]);
+            r_max = max(r_max, height[r]);
+            if(l_max < r_max) res += l_max - height[l++];
+            else res += r_max - height[r--];
+        }
+        return res;
+    }
+};
+```
