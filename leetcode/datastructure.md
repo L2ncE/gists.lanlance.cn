@@ -2225,3 +2225,69 @@ public:
     }
 };
 ```
+
+### 124. 二叉树中的最大路径和
+
+https://leetcode.cn/problems/binary-tree-maximum-path-sum/
+
+路径 被定义为一条从树中任意节点出发，沿父节点-子节点连接，达到任意节点的序列。同一个节点在一条路径序列中 至多出现一次 。该路径 至少包含一个 节点，且不一定经过根节点。
+
+路径和 是路径中各节点值的总和。
+
+给你一个二叉树的根节点 root ，返回其 最大路径和 。
+
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
+public:
+    int res;
+    int maxPathSum(TreeNode* root) {
+        res = INT_MIN;
+        dfs(root);
+        return res;
+    }
+
+    int dfs(TreeNode* root) {
+        if(!root) return 0;
+        int l = max(0, dfs(root->left)), r = max(0, dfs(root->right));
+        res = max(res, root->val + l + r);
+        return root->val + max(l, r);
+    }
+};
+```
+
+### 56. 合并区间
+
+https://leetcode.cn/problems/merge-intervals/
+
+以数组 intervals 表示若干个区间的集合，其中单个区间为 intervals[i] = [starti, endi] 。请你合并所有重叠的区间，并返回   一个不重叠的区间数组，该数组需恰好覆盖输入中的所有区间  。
+
+```cpp
+class Solution {
+public:
+    vector<vector<int>> merge(vector<vector<int>>& intervals) {
+        vector<vector<int>> res;
+        if(intervals.empty()) return res;
+        sort(intervals.begin(), intervals.end());
+        int l = intervals[0][0], r = intervals[0][1];
+        for(int i = 1; i < intervals.size(); i++) {
+            if(intervals[i][0] > r) {
+                res.push_back({l, r});
+                l = intervals[i][0], r = intervals[i][1];
+            }else r = max(r, intervals[i][1]);
+        }
+        res.push_back({l, r});
+        return res;
+    }
+};
+```

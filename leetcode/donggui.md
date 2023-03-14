@@ -626,3 +626,44 @@ public:
     }
 };
 ```
+
+### 72. 编辑距离
+
+https://leetcode.cn/problems/edit-distance/
+
+给你两个单词  word1 和  word2， 请返回将  word1  转换成  word2 所使用的最少操作数  。
+
+你可以对一个单词进行如下三种操作：
+
+插入一个字符
+删除一个字符
+替换一个字符
+
+```cpp
+class Solution {
+public:
+    vector<vector<int>> memo;
+    int minDistance(string word1, string word2) {
+        int n = word1.size(), m = word2.size();
+        memo = vector<vector<int>>(n, vector<int>(m, -1));
+        return dp(word1, n - 1, word2, m - 1);
+    }
+
+    int dp(string s1, int i, string s2, int j) {
+        if(i == -1) return j + 1;
+        if(j == -1) return i + 1;
+        if(memo[i][j] != -1) return memo[i][j];
+        if(s1[i] == s2[j]) memo[i][j] = dp(s1, i - 1, s2, j - 1);
+        else memo[i][j] = minFunc(
+            dp(s1, i - 1, s2, j - 1) + 1,
+            dp(s1, i, s2, j - 1) + 1,
+            dp(s1, i - 1, s2, j) + 1
+        );
+        return memo[i][j];
+    }
+
+    int minFunc(int a, int b, int c) {
+        return min(a, min(b, c));
+    }
+};
+```
