@@ -44,3 +44,12 @@
 - [位运算](leetcode/bit.md)
 - [模拟](leetcode/sim.md)
 - [剑指 Offer](leetcode/offer.md)
+
+## 🧑🏻‍💻 计算机面试八股文 <a href="cs" id="cs"></a>
+
+- [计算机网络](cs/cn.md)
+- [操作系统](cs/os.md)
+- [MySQL](cs/mysql.md)
+- [Redis](cs/redis.md)
+- [消息队列](cs/mq.md)
+- [Golang](cs/go.md)
