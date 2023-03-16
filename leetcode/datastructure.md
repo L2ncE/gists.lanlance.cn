@@ -2291,3 +2291,183 @@ public:
     }
 };
 ```
+
+### 148. 排序链表
+
+https://leetcode.cn/problems/sort-list/
+
+给你链表的头结点  head ，请将其按 升序 排列并返回 排序后的链表 。
+
+```cpp
+/**
+ * Definition for singly-linked list.
+ * struct ListNode {
+ *     int val;
+ *     ListNode *next;
+ *     ListNode() : val(0), next(nullptr) {}
+ *     ListNode(int x) : val(x), next(nullptr) {}
+ *     ListNode(int x, ListNode *next) : val(x), next(next) {}
+ * };
+ */
+class Solution {
+public:
+    ListNode* sortList(ListNode* head) {
+        int n = 0;
+        for(auto p = head; p; p = p->next) n++;
+        auto dummy = new ListNode();
+        dummy->next = head;
+        for(int i = 1; i < n; i *= 2) {
+            auto cur = dummy;
+            for(int j = 1; j + i <= n; j += 2 * i) {
+                auto p = cur->next, q = p;
+                for(int k = 0; k < i; k++) q = q->next;
+                int l = 0, r = 0;
+                while(l < i && r < i && p && q) {
+                    if(p->val < q->val) cur = cur->next = p, p = p->next, l++;
+                    else cur = cur->next = q, q = q->next, r++;
+                }
+                while(l < i && p) cur = cur->next = p, p = p->next, l++;
+                while(r < i && q) cur = cur->next = q, q = q->next, r++;
+                cur->next = q;
+            }
+        }
+        return dummy->next;
+    }
+};
+```
+
+### 82. 删除排序链表中的重复元素 II
+
+https://leetcode.cn/problems/remove-duplicates-from-sorted-list-ii/
+
+给定一个已排序的链表的头  head ，  删除原始链表中所有重复数字的节点，只留下不同的数字  。返回 已排序的链表  。
+
+```cpp
+/**
+ * Definition for singly-linked list.
+ * struct ListNode {
+ *     int val;
+ *     ListNode *next;
+ *     ListNode() : val(0), next(nullptr) {}
+ *     ListNode(int x) : val(x), next(nullptr) {}
+ *     ListNode(int x, ListNode *next) : val(x), next(next) {}
+ * };
+ */
+class Solution {
+public:
+    ListNode* deleteDuplicates(ListNode* head) {
+        if(!head) return head;
+        auto dummy = new ListNode();
+        dummy->next = head;
+        auto p = dummy;
+        while(p->next) {
+            auto q = p->next->next;
+            while(q && q->val == p->next->val) q = q->next;
+            if(q == p->next->next) p = p->next;
+            else p->next = q;
+        }
+        return dummy->next;
+    }
+};
+```
+
+### 2. 两数相加
+
+https://leetcode.cn/problems/add-two-numbers/
+
+给你两个   非空 的链表，表示两个非负的整数。它们每位数字都是按照   逆序   的方式存储的，并且每个节点只能存储   一位   数字。
+
+请你将两个数相加，并以相同形式返回一个表示和的链表。
+
+你可以假设除了数字 0 之外，这两个数都不会以 0  开头。
+
+```cpp
+/**
+ * Definition for singly-linked list.
+ * struct ListNode {
+ *     int val;
+ *     ListNode *next;
+ *     ListNode() : val(0), next(nullptr) {}
+ *     ListNode(int x) : val(x), next(nullptr) {}
+ *     ListNode(int x, ListNode *next) : val(x), next(next) {}
+ * };
+ */
+class Solution {
+public:
+    ListNode* addTwoNumbers(ListNode* l1, ListNode* l2) {
+        auto dummy = new ListNode(), q = dummy;
+        int t = 0;
+        while(l1 || l2 || t) {
+            if(l1) t += l1->val, l1 = l1->next;
+            if(l2) t += l2->val, l2 = l2->next;
+            q = q->next = new ListNode(t % 10);
+            t /= 10;
+        }
+        return dummy->next;
+    }
+};
+```
+
+### 8. 字符串转换整数 (atoi)
+
+https://leetcode.cn/problems/string-to-integer-atoi/
+
+请你来实现一个  myAtoi(string s)  函数，使其能将字符串转换成一个 32 位有符号整数（类似 C/C++ 中的 atoi 函数）。
+
+函数  myAtoi(string s) 的算法如下：
+
+读入字符串并丢弃无用的前导空格
+检查下一个字符（假设还未到字符末尾）为正还是负号，读取该字符（如果有）。 确定最终结果是负数还是正数。 如果两者都不存在，则假定结果为正。
+读入下一个字符，直到到达下一个非数字字符或到达输入的结尾。字符串的其余部分将被忽略。
+将前面步骤读入的这些数字转换为整数（即，"123" -> 123， "0032" -> 32）。如果没有读入数字，则整数为 0 。必要时更改符号（从步骤 2 开始）。
+如果整数数超过 32 位有符号整数范围 [−231,  231 − 1] ，需要截断这个整数，使其保持在这个范围内。具体来说，小于 −231 的整数应该被固定为 −231 ，大于 231 − 1 的整数应该被固定为 231 − 1 。
+返回整数作为最终结果。
+注意：
+
+本题中的空白字符只包括空格字符 ' ' 。
+除前导空格或数字后的其余字符串外，请勿忽略 任何其他字符。
+
+```cpp
+class Solution {
+public:
+    int myAtoi(string s) {
+        int n = s.size(), i = 0, flag = 1;
+        long long res = 0;
+        while(i < n && s[i] == ' ') i++;
+        if(s[i] == '-') flag = -1, i++;
+        else if(s[i] == '+') i++;
+        while(i < n && s[i] >= '0' && s[i] <= '9') {
+            res = res * 10 + s[i] - '0';
+            if(res > INT_MAX) break;
+            i++;
+        }
+        if((int)res != res) return flag == 1 ? INT_MAX : INT_MIN;
+        return res * flag;
+    }
+};
+```
+
+### 239. 滑动窗口最大值
+
+https://leetcode.cn/problems/sliding-window-maximum/
+
+给你一个整数数组 nums，有一个大小为  k  的滑动窗口从数组的最左侧移动到数组的最右侧。你只可以看到在滑动窗口内的 k  个数字。滑动窗口每次只向右移动一位。
+
+返回 滑动窗口中的最大值 。
+
+```cpp
+class Solution {
+public:
+    vector<int> maxSlidingWindow(vector<int>& nums, int k) {
+        deque<int> q;
+        vector<int> res;
+        for(int i = 0; i < nums.size(); i++) {
+            if(q.size() && i - k + 1 > q.front()) q.pop_front();
+            while(q.size() && nums[i] >= nums[q.back()]) q.pop_back();
+            q.push_back(i);
+            if(i >= k - 1) res.push_back(nums[q.front()]);
+        }
+        return res;
+    }
+};
+```

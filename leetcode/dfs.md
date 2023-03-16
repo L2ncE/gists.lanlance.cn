@@ -828,3 +828,35 @@ public:
 ```
 
 经典洪水算法，模版题。
+
+### 22. 括号生成
+
+https://leetcode.cn/problems/generate-parentheses/
+
+数字 n  代表生成括号的对数，请你设计一个函数，用于能够生成所有可能的并且 有效的 括号组合。
+
+```cpp
+class Solution {
+public:
+    vector<string> generateParenthesis(int n) {
+        vector<string> res;
+        string path;
+        dfs(n, n, res, path);
+        return res;
+    }
+
+    void dfs(int l, int r, vector<string>& res, string& path) {
+        if(l < 0 || r < 0) return;
+        if(l > r) return;
+        if(l == 0 && r == 0) res.push_back(path);
+
+        path.push_back('(');
+        dfs(l - 1, r, res, path);
+        path.pop_back();
+
+        path.push_back(')');
+        dfs(l, r - 1, res, path);
+        path.pop_back();
+    }
+};
+```
