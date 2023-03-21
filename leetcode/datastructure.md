@@ -2488,3 +2488,53 @@ public:
     }
 };
 ```
+
+### 234. 回文链表
+
+https://leetcode.cn/problems/palindrome-linked-list/
+
+给你一个单链表的头节点 head ，请你判断该链表是否为回文链表。如果是，返回 true ；否则，返回 false 。
+
+```cpp
+/**
+ * Definition for singly-linked list.
+ * struct ListNode {
+ *     int val;
+ *     ListNode *next;
+ *     ListNode() : val(0), next(nullptr) {}
+ *     ListNode(int x) : val(x), next(nullptr) {}
+ *     ListNode(int x, ListNode *next) : val(x), next(next) {}
+ * };
+ */
+class Solution {
+public:
+    bool isPalindrome(ListNode* head) {
+        auto slow = head, fast = head;
+        while(fast && fast->next) {
+            slow = slow->next;
+            fast = fast->next->next;
+        }
+        if(fast) slow = slow->next;
+        auto left = head, right = reverseList(slow);
+        while(right) {
+            if(left->val != right->val) return false;
+            left = left->next;
+            right = right->next;
+        }
+        return true;
+    }
+
+    ListNode* reverseList(ListNode* head) {
+         if(!head) return NULL;
+         auto a = head, b = a->next;
+         while(b){
+             auto tmp = b->next;
+             b->next = a;
+             a = b;
+             b = tmp;
+         }
+         head->next = NULL;
+         return a;
+    }
+};
+```

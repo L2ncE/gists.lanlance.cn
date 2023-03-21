@@ -106,3 +106,47 @@ public:
 三位数有几个？100~999 共 9 _ 100 = 900 个。共几位？共 3 _ 900 = 2700 位。
 
 以此类推，我们可以通过这个规律推断第 n 位的数字到底是什么。所以这道题的难点在于如何把上述规律写成算法代码。
+
+### 470. 用 Rand7() 实现 Rand10()
+
+https://leetcode.cn/problems/implement-rand10-using-rand7/
+
+给定方法  rand7  可生成 [1,7] 范围内的均匀随机整数，试写一个方法  rand10  生成 [1,10] 范围内的均匀随机整数。
+
+你只能调用  rand7()  且不能调用其他方法。请不要使用系统的  Math.random()  方法。
+
+每个测试用例将有一个内部参数 n，即你实现的函数 rand10() 在测试时将被调用的次数。请注意，这不是传递给 rand10() 的参数。
+
+```cpp
+// The rand7() API is already defined for you.
+// int rand7();
+// @return a random integer in the range 1 to 7
+
+class Solution {
+public:
+    int rand10() {
+        int t = (rand7() - 1) * 7 + rand7();
+        if(t > 40) return rand10();
+        return (t - 1) % 10 + 1;
+    }
+};
+```
+
+### 48. 旋转图像
+
+https://leetcode.cn/problems/rotate-image/
+
+给定一个 n × n 的二维矩阵  matrix 表示一个图像。请你将图像顺时针旋转 90 度。
+
+你必须在 原地 旋转图像，这意味着你需要直接修改输入的二维矩阵。请不要 使用另一个矩阵来旋转图像。
+
+```cpp
+class Solution {
+public:
+    void rotate(vector<vector<int>>& matrix) {
+        int n = matrix.size();
+        for (int i = 0, j = n - 1; i < j; i ++, j --) swap(matrix[i], matrix[j]);
+        for(int i = 0; i < n; i++) for(int j = i; j < n; j++) swap(matrix[i][j], matrix[j][i]);
+    }
+};
+```
