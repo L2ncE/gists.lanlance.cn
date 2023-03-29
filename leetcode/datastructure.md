@@ -2577,3 +2577,78 @@ public:
     }
 };
 ```
+
+### 14. 最长公共前缀
+
+https://leetcode.cn/problems/longest-common-prefix/
+
+编写一个函数来查找字符串数组中的最长公共前缀。
+
+如果不存在公共前缀，返回空字符串 ""。
+
+```cpp
+class Solution {
+public:
+    string longestCommonPrefix(vector<string>& strs) {
+        string res;
+        if(strs.empty()) return res;
+        for(int i = 0;; i++) {
+            if(i >= strs[0].size()) return res;
+            auto c = strs[0][i];
+            for(auto str : strs) if(i >= str.size() || c != str[i]) return res;
+            res += c;
+        }
+        return res;
+    }
+};
+```
+
+### 662. 二叉树最大宽度
+
+https://leetcode.cn/problems/maximum-width-of-binary-tree/
+
+给你一棵二叉树的根节点 root ，返回树的 最大宽度 。
+
+树的 最大宽度 是所有层中最大的 宽度 。
+
+每一层的 宽度 被定义为该层最左和最右的非空节点（即，两个端点）之间的长度。将这个二叉树视作与满二叉树结构相同，两端点间会出现一些延伸到这一层的 null 节点，这些 null 节点也计入长度。
+
+题目数据保证答案将会在   32 位 带符号整数范围内。
+
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
+public:
+    int widthOfBinaryTree(TreeNode* root) {
+        if(!root) return 0;
+        queue<pair<TreeNode*, int>> q;
+        q.push({root, 1});
+        int res = 1;
+        while(q.size()) {
+            int len = q.size();
+            int l = q.front().second, r;
+            while(len--) {
+                auto t = q.front();
+                q.pop();
+                auto t1 = t.first;
+                auto p = t.second - l + 1;
+                r = t.second;
+                if(t1->left) q.push({t1->left, p * 2ll});
+                if(t1->right) q.push({t1->right, p * 2ll + 1});
+            }
+            res = max(res, r - l + 1);
+        }
+        return res;
+    }
+};
+```

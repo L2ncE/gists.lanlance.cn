@@ -722,3 +722,32 @@ public:
     }
 };
 ```
+
+### 62. 不同路径
+
+https://leetcode.cn/problems/unique-paths/
+
+一个机器人位于一个 m x n  网格的左上角 （起始点在下图中标记为 “Start” ）。
+
+机器人每次只能向下或者向右移动一步。机器人试图达到网格的右下角（在下图中标记为 “Finish” ）。
+
+问总共有多少条不同的路径？
+
+```cpp
+class Solution {
+public:
+    vector<vector<int>> memo;
+    int uniquePaths(int m, int n) {
+        memo = vector<vector<int>>(m, vector<int>(n, -1));
+        return dp(m - 1, n - 1);
+    }
+
+    int dp(int x, int y) {
+        if(x == 0 && y == 0) return 1;
+        if(x < 0 || y < 0) return 0;
+        if(memo[x][y] != -1) return memo[x][y];
+        memo[x][y] = dp(x - 1, y) + dp(x, y - 1);
+        return memo[x][y];
+    }
+};
+```
