@@ -2675,3 +2675,75 @@ public:
     }
 };
 ```
+
+### 227. 基本计算器 II
+
+https://leetcode.cn/problems/basic-calculator-ii/
+
+给你一个字符串表达式 s ，请你实现一个基本计算器来计算并返回它的值。
+
+整数除法仅保留整数部分。
+
+你可以假设给定的表达式总是有效的。所有中间结果将在  [-231, 231 - 1] 的范围内。
+
+```cpp
+class Solution {
+public:
+    stack<int> num;
+    stack<char> op;
+    int calculate(string s) {
+        unordered_map<char, int> pr;
+        pr['+'] = pr['-'] = 1;
+        pr['*'] = pr['/'] = 2;
+        for(int i = 0; i < s.size(); i++) {
+            char c = s[i];
+            if(c == ' ') continue;
+            if(isdigit(c)) {
+                int res = 0, j = i;
+                while(j < s.size() && isdigit(s[j])) res = res * 10 + (s[j++] - '0');
+                num.push(res);
+                i = j - 1;
+            } else {
+                while(op.size() && pr[op.top()] >= pr[c]) eval();
+                op.push(c);
+            }
+        }
+        while(op.size()) eval();
+        return num.top();
+    }
+
+    void eval() {
+        int res;
+        int b = num.top(); num.pop();
+        int a = num.top(); num.pop();
+        char c = op.top(); op.pop();
+        if(c == '+') res = a + b;
+        else if(c == '-') res = a - b;
+        else if(c == '*') res = a * b;
+        else res = a / b;
+        num.push(res);
+    }
+};
+```
+
+### 179. 最大数
+
+https://leetcode.cn/problems/largest-number/
+
+给定一组非负整数 nums，重新排列每个数的顺序（每个数不可拆分）使之组成一个最大的整数。
+
+```cpp
+class Solution {
+public:
+    string largestNumber(vector<int>& nums) {
+        sort(nums.begin(), nums.end(), [](int x, int y) {
+            string a = to_string(x), b = to_string(y);
+            return a + b > b + a;
+        });
+        string res;
+        for(auto num : nums) res += to_string(num);
+        if(res[0] == '0') return "0";
+        return res;
+    }
+};
+```

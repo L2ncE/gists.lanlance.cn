@@ -351,3 +351,47 @@ public:
     }
 };
 ```
+
+### 718. 最长重复子数组
+
+https://leetcode.cn/problems/maximum-length-of-repeated-subarray/
+
+给两个整数数组 nums1 和 nums2 ，返回 两个数组中 公共的 、长度最长的子数组的长度 。
+
+```cpp
+class Solution {
+public:
+    typedef unsigned long long ULL;
+    vector<ULL> ha, hb, p;
+    const int P = 131;
+    int m, n;
+    int findLength(vector<int>& nums1, vector<int>& nums2) {
+        m = nums1.size(), n = nums2.size();
+        ha.resize(m + 1), hb.resize(n + 1), p.resize(m + 1);
+        for(int i = 1; i <= m; i++) ha[i] = ha[i - 1] * P + nums1[i - 1];
+        for(int i = 1; i <= n; i++) hb[i] = hb[i - 1] * P + nums2[i - 1];
+        p[0] = 1;
+        for(int i = 1; i <= m; i++) p[i] = p[i - 1] * P;
+        int l = 0, r = m;
+        while(l < r) {
+            int mid = l + r + 1 >> 1;
+            if(check(mid)) l = mid;
+            else r = mid - 1;
+        }
+        return r;
+    }
+
+    bool check(int mid) {
+        unordered_set<ULL> s;
+        for(int i = mid; i <= m; i++) s.insert(get(ha, i - mid + 1, i));
+        for(int i = mid; i <= n; i++) {
+            if(s.count(get(hb, i - mid + 1, i))) return true;
+        }
+        return false;
+    }
+
+    ULL get(vector<ULL>& h, int l, int r) {
+        return h[r] - h[l - 1] * p[r - l + 1];
+    }
+};
+```
