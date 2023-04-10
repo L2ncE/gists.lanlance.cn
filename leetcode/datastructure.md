@@ -2747,3 +2747,104 @@ public:
     }
 };
 ```
+
+### 138. 复制带随机指针的链表
+
+给你一个长度为 n 的链表，每个节点包含一个额外增加的随机指针 random ，该指针可以指向链表中的任何节点或空节点。
+
+构造这个链表的   深拷贝。  深拷贝应该正好由 n 个 全新 节点组成，其中每个新节点的值都设为其对应的原节点的值。新节点的 next 指针和 random 指针也都应指向复制链表中的新节点，并使原链表和复制链表中的这些指针能够表示相同的链表状态。复制链表中的指针都不应指向原链表中的节点 。
+
+例如，如果原链表中有 X 和 Y 两个节点，其中 X.random --> Y 。那么在复制链表中对应的两个节点 x 和 y ，同样有 x.random --> y 。
+
+返回复制链表的头节点。
+
+```cpp
+/*
+// Definition for a Node.
+class Node {
+public:
+    int val;
+    Node* next;
+    Node* random;
+
+    Node(int _val) {
+        val = _val;
+        next = NULL;
+        random = NULL;
+    }
+};
+*/
+
+class Solution {
+public:
+    Node* copyRandomList(Node* head) {
+        unordered_map<Node*, Node*> h;
+        for(auto p = head; p; p = p->next) if(!h.count(p)) h[p] = new Node(p->val);
+        for(auto p = head; p; p = p->next) {
+            if(p->next) h[p]->next = h[p->next];
+            if(p->random) h[p]->random = h[p->random];
+        }
+        return h[head];
+    }
+};
+```
+
+### 61. 旋转链表
+
+https://leetcode.cn/problems/rotate-list/
+
+```cpp
+/**
+ * Definition for singly-linked list.
+ * struct ListNode {
+ *     int val;
+ *     ListNode *next;
+ *     ListNode() : val(0), next(nullptr) {}
+ *     ListNode(int x) : val(x), next(nullptr) {}
+ *     ListNode(int x, ListNode *next) : val(x), next(next) {}
+ * };
+ */
+class Solution {
+public:
+    ListNode* rotateRight(ListNode* head, int k) {
+        if(!head) return head;
+        int n = 0;
+        ListNode* tail;
+        for(auto p = head; p; p = p->next) {
+            tail = p;
+            n++;
+        }
+        k %= n;
+        if(!k) return head;
+        auto p = head;
+        for(int i = 0; i < n - k - 1; i++) p = p->next;
+        tail->next = head;
+        head = p->next;
+        p->next = NULL;
+        return head;
+    }
+};
+```
+
+### 402. 移掉 K 位数字
+
+https://leetcode.cn/problems/remove-k-digits/
+
+给你一个以字符串表示的非负整数 num 和一个整数 k ，移除这个数中的 k 位数字，使得剩下的数字最小。请你以字符串形式返回这个最小的数字。
+
+```cpp
+class Solution {
+public:
+    string removeKdigits(string num, int k) {
+        string res;
+        for(int x : num) {
+            while(res.size() > 0 && x < res.back() && k > 0) res.pop_back(), k--;
+            res.push_back(x);
+        }
+        while(k > 0) res.pop_back(), k--;
+        int n = res.size(), i = 0;
+        while(res[i] == '0') i++;
+        return n - i == 0 ? "0" : res.substr(i, n - i);
+    }
+};
+```
