@@ -2848,3 +2848,72 @@ public:
     }
 };
 ```
+
+### 143. 重排链表
+
+给定一个单链表 L 的头节点 head ，单链表 L 表示为：
+
+L0 → L1 → … → Ln - 1 → Ln
+
+请将其重新排列后变为：
+
+L0 → Ln → L1 → Ln - 1 → L2 → Ln - 2 → …
+
+不能只是单纯的改变节点内部的值，而是需要实际的进行节点交换。
+
+```cpp
+/**
+ * Definition for singly-linked list.
+ * struct ListNode {
+ *     int val;
+ *     ListNode *next;
+ *     ListNode() : val(0), next(nullptr) {}
+ *     ListNode(int x) : val(x), next(nullptr) {}
+ *     ListNode(int x, ListNode *next) : val(x), next(next) {}
+ * };
+ */
+class Solution {
+public:
+    void reorderList(ListNode* head) {
+        auto mid = findMid(head);
+        auto l1 = head;
+        auto l2 = mid->next;
+        mid->next = NULL;
+        l2 = reverseList(l2);
+        mergeList(l1, l2);
+    }
+
+    ListNode* findMid(ListNode* head) {
+        auto slow = head, fast = head;
+        while(fast && fast->next) {
+            slow = slow->next;
+            fast = fast->next->next;
+        }
+        return slow;
+    }
+
+    ListNode* reverseList(ListNode* head) {
+        if(!head || !head->next) return head;
+        auto a = head, b = head->next;
+        while(b) {
+            auto t = b->next;
+            b->next = a;
+            a = b;
+            b = t;
+        }
+        head->next = NULL;
+        return a;
+    }
+
+    void mergeList(ListNode* l1, ListNode* l2) {
+        while (l1 && l2) {
+            auto a = l1->next;
+            auto b = l2->next;
+            l1->next = l2;
+            l1 = a;
+            l2->next = l1;
+            l2 = b;
+        }
+    }
+};
+```
