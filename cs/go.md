@@ -185,7 +185,7 @@ lock 用来保证每个读 channel 或写 channel 的操作都是原子的。
 
 解决方案就是增加一个传递关闭信号的 channel，receiver 通过信号 channel 下达关闭数据 channel 指令。senders 监听到关闭信号后，停止发送数据。
 
-和上面的情况不同，这里有 M 个 receiver，如果直接还是采取第 3 种解决方案，由 receiver 直接关闭 stopCh 的话，就会重复关闭一个 channel，导致 panic。因此需要增加一个中间人，M 个 receiver 都向它发送关闭 dataCh 的“请求”，中间人收到第一个请求后，就会直接下达关闭 dataCh 的指令（通过关闭 stopCh，这时就不会发生重复关闭的情况，因为 stopCh 的发送方只有中间人一个）。另外，这里的 N 个 sender 也可以向中间人发送关闭 dataCh 的请求。
+和上面的情况不同，这里有 M 个 receiver，由 receiver 直接关闭 stopCh 的话，就会重复关闭一个 channel，导致 panic。因此需要增加一个中间人，M 个 receiver 都向它发送关闭 dataCh 的“请求”，中间人收到第一个请求后，就会直接下达关闭 dataCh 的指令（通过关闭 stopCh，这时就不会发生重复关闭的情况，因为 stopCh 的发送方只有中间人一个）。另外，这里的 N 个 sender 也可以向中间人发送关闭 dataCh 的请求。
 
 ### 25. channel 发送和接收元素的本质是什么
 
@@ -432,3 +432,18 @@ D (白)
 ### 50. Hertz Handler 中两个上下文的原因
 
 核心原因在于请求上下文（RequestContext）的生命周期无法优雅的按需延长， 最终在各种设计权衡下，我们在路由的处理函数签名中增加一个标准的上下文入参，通过分离出生命周期长短各异的两个上下文的方式，从根本上解决各种因为上下文生命周期不一致导致的异常问题
+
+### 51. new 和 make 的区别
+
+- new 只用于分配内存，返回一个指向地址的指针。它为每个新类型分配一片内存，初始化为 0 且返回类型\*T 的内存地址，它相当于&T{}
+- make 只可用于 slice,map,channel 的初始化,返回的是引用。
+
+### 52. mutex 有几种模式？
+
+正常模式
+
+所有 goroutine 按照 FIFO 的顺序进行锁获取，被唤醒的 goroutine 和新请求锁的 goroutine 同时进行锁获取，通常新请求锁的 goroutine 更容易获取锁(持续占有 cpu)，被唤醒的 goroutine 则不容易获取到锁。公平性：否。
+
+饥饿模式
+
+所有尝试获取锁的 goroutine 进行等待排队，新请求锁的 goroutine 不会进行锁获取(禁用自旋)，而是加入队列尾部等待获取锁。公平性：是。
