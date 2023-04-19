@@ -102,4 +102,3 @@ Prometheus 是一个开源的系统监控和报警系统
 - 指标（metric）：指标名称和描述当前样本特征的 labelsets；
 - 时间戳（timestamp）：一个精确到毫秒的时间戳；
 - 样本值（value）： 一个 folat64 的浮点型数据表示当前样本的值。
-
