@@ -884,3 +884,17 @@ QUIC 协议的特点：
 - 对于客户端和服务端之间需要频繁交互的复杂场景，比如网页游戏，都可以考虑使用 WebSocket 协议。
 - WebSocket 和 socket 几乎没有任何关系，只是叫法相似。
 - 正因为各个浏览器都支持 HTTP 协议，所以 WebSocket 会先利用 HTTP 协议加上一些特殊的 header 头进行握手升级操作，升级成功后就跟 HTTP 没有任何关系了，之后就用 WebSocket 的数据格式进行收发数据。
+
+### 70. ping 是用什么协议完成的？在哪一层？
+
+ping 命令使用的是 ICMP 协议，全称 Internet Control Message Protocol，即 Internet 控制消息协议。 ICMP 协议是 TCP/IP 协议集中的一个子协议，属于网络层协议。因此，ping 命令属于网络层协议，即第三层协议。
+
+### 71. OSI 七层模型和各层有什么协议
+
+- 应用层：HTTP、FTP、SMTP、POP3 等。
+- 表示层：JPEG、MPEG 等。
+- 会话层：RPC 等。
+- 传输层：TCP、UDP 等。
+- 网络层：IP、ICMP 等。
+- 数据链路层：ARP（IP 地址转换为 MAC 地址） 等。
+- 物理层：IEEE802.3 等。

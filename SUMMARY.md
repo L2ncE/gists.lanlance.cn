@@ -61,3 +61,4 @@
 - [MongoDB](cs/mongo.md)
 - [Linux](cs/linux.md)
 - [数据结构与算法](cs/al.md)
+- [场景题](cs/scene.md)
