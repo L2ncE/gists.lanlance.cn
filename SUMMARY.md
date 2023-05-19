@@ -53,6 +53,7 @@
 - [Redis](cs/redis.md)
 - [消息队列](cs/mq.md)
 - [Golang](cs/go.md)
+- [Python](cs/py.md)
 - [对象存储](cs/objs.md)
 - [微服务](cs/ms.md)
 - [云原生](cs/cdnt.md)
