@@ -675,6 +675,10 @@ MySQL 可以通过在 select 语句后增加 for update 来获取排它锁，从
 - 数据库参数优化：可以通过修改 MySQL 配置文件中的参数来优化数据库性能，如 innodb_buffer_pool_size、innodb_log_file_size 等。
 - 代码优化：应用程序中的代码也可能导致慢查询，如连接池设置不合理、代码中存在死循环等。
 
-### 如何防止 SQL 注入
+### 64. 如何防止 SQL 注入
 
 GORM 使用 database/sql 的参数占位符来构造 SQL 语句，这可以自动转义参数，避免 SQL 注入数据。
+
+### 65. InnoDB 有 Hash 索引吗
+
+InnoDB 存储引擎 是支持 hash 索引的，不过，我们必须启用，Hash 索引的创建由 InnoDB 存储引擎引擎自动优化创建，我们干预不了。

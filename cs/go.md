@@ -521,3 +521,7 @@ copy(sliceA, sliceB)
 - 遍历 map 并将 key 添加到 slice 中。
 - 对 slice 进行排序。
 - 遍历排序后的 slice 并输出 map 中的值。
+
+### 65. Gin 框架的路由是如何实现的
+
+gin 框架的路由是基于 httprouter 实现的，采用类似字典树一样的数据结构来存储路由与 handle 方法的映射。这也是框架高性能的原因之一。
