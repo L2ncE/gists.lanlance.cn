@@ -525,3 +525,7 @@ copy(sliceA, sliceB)
 ### 65. Gin 框架的路由是如何实现的
 
 gin 框架的路由是基于 httprouter 实现的，采用类似字典树一样的数据结构来存储路由与 handle 方法的映射。这也是框架高性能的原因之一。
+
+### 66. Go 内存模型
+
+Go 语言内存模型是基于 happens-before 关系的，它定义了在并发编程中，对共享变量进行读写时，不同的 goroutine 之间会产生什么样的同步和可见性保证。happens-before 关系是指在一个 goroutine 中，按照程序顺序，前面的操作 happens-before 于后续的任意操作；在不同的 goroutine 中，如果两个操作没有 happens-before 关系，那么它们就可以并发执行。
