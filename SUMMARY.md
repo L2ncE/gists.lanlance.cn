@@ -49,6 +49,7 @@
 
 - [Golang](cs/go.md)
 - [Python](cs/py.md)
+- [C++](cs/cpp.md)
 - [计算机网络](cs/cn.md)
 - [操作系统](cs/os.md)
 - [MySQL](cs/mysql.md)
