@@ -579,3 +579,110 @@ Go 语言中 Mutex 的 goroutine 数最大是 536870911，这个数字是由 Mut
 ### 72. 如何分析锁竞争的激烈程度
 
 使用 Grafana 等监控关键互斥锁上等待的 goroutine 的数量，是我们分析锁竞争的激烈程度的一个重要指标。
+
+### 73. RWMutex 的使用场景
+
+如果你遇到可以明确区分 reader 和 writer goroutine 的场景，且有大量的并发读、少量的并发写，并且有强烈的性能需求，你就可以考虑使用读写锁 RWMutex 替换 Mutex。
+
+### 74. Go 中 RWMutex 的策略
+
+Go 标准库中的 RWMutex 设计是 Write-preferring 方案。一个正在阻塞的 Lock 调用会排除新的 reader 请求到锁。
+
+写优先的设计意味着，如果已经有一个 writer 在等待请求锁的话，它会阻止新来的请求锁的 reader 获取到锁，所以优先保障 writer。当然，如果有一些 reader 已经请求了锁的话，新请求的 writer 也会等待已经存在的 reader 都释放锁之后才能获取。所以，写优先级设计中的优先权是针对新来的请求而言的。这种设计主要避免了 writer 的饥饿问题。
+
+### 75. RWMutex 的 3 个踩坑点
+
+1. 不可复制
+2. 重入导致死锁
+3. 释放未加锁的 RWMutex
+
+### 76. 使用 WaitGroup 时的常见错误
+
+1. 计数器设置为负值
+2. 不期望的 Add 时机
+3. 前一个 Wait 还没结束就重用 WaitGroup
+
+#### 如何避免
+
+- 不重用 WaitGroup。新建一个 WaitGroup 不会带来多大的资源开销，重用反而更容易出错。
+- 保证所有的 Add 方法调用都在 Wait 之前。
+- 不传递负数给 Add 方法，只通过 Done 来给计数值减 1。
+- 不做多余的 Done 方法调用，保证 Add 的计数值和 Done 方法调用的数量是一样的。
+- 不遗漏 Done 方法的调用，否则会导致 Wait hang 住无法返回。
+
+### 77. noCopy：辅助 vet 检查
+
+noCopy 字段的类型是 noCopy，它只是一个辅助的、用来帮助 vet 检查用的类型:
+
+```go
+type noCopy struct{}
+
+// Lock is a no-op used by -copylocks checker from `go vet`.
+func (*noCopy) Lock()   {}
+func (*noCopy) Unlock() {}
+```
+
+如果你想要自己定义的数据结构不被复制使用，或者说，不能通过 vet 工具检查出复制使用的报警，就可以通过嵌入 noCopy 这个数据类型来实现。
+
+### 78. Cond 怎么用
+
+- Signal 方法，允许调用者 Caller 唤醒一个等待此 Cond 的 goroutine。如果此时没有等待的 goroutine，显然无需通知 waiter；如果 Cond 等待队列中有一个或者多个等待的 goroutine，则需要从等待队列中移除第一个 goroutine 并把它唤醒。在其他编程语言中，比如 Java 语言中，Signal 方法也被叫做 notify 方法。调用 Signal 方法时，不强求你一定要持有 c.L 的锁。
+- Broadcast 方法，允许调用者 Caller 唤醒所有等待此 Cond 的 goroutine。如果此时没有等待的 goroutine，显然无需通知 waiter；如果 Cond 等待队列中有一个或者多个等待的 goroutine，则清空所有等待的 goroutine，并全部唤醒。在其他编程语言中，比如 Java 语言中，Broadcast 方法也被叫做 notifyAll 方法。同样地，调用 Broadcast 方法时，也不强求你一定持有 c.L 的锁。
+- Wait 方法，会把调用者 Caller 放入 Cond 的等待队列中并阻塞，直到被 Signal 或者 Broadcast 的方法从等待队列中移除并唤醒。
+
+Go 标准库提供 Cond 原语的目的是，为等待 / 通知场景下的并发问题提供支持。Cond 通常应用于等待某个条件的一组 goroutine，等条件变为 true 的时候，其中一个 goroutine 或者所有的 goroutine 都会被唤醒执行。
+
+### 79. Cond 的常见错误
+
+- 调用 Wait 的时候没有加锁
+  - 如果调用 Wait 之前不加锁的话，就有可能 Unlock 一个未加锁的 Locker。
+- 没有检查等待条件是否满足
+  - waiter goroutine 被唤醒不等于等待条件被满足，只是有 goroutine 把它唤醒了而已。你也可以理解为，等待者被唤醒，只是得到了一次检查的机会而已。
+
+### 80. Once 的使用场景
+
+Once 常常用来初始化单例资源，或者并发访问只需初始化一次的共享资源，或者在测试的时候初始化一次测试资源。
+
+### 81. 如何实现一个 Once
+
+一个正确的 Once 实现要使用一个互斥锁，这样初始化的时候如果有并发的 goroutine，就会进入 doSlow 方法。互斥锁的机制保证只有一个 goroutine 进行初始化，同时利用双检查的机制（double-checking），再次判断 o.done 是否为 0，如果为 0，则是第一次执行，执行完毕后，就将 o.done 设置为 1，然后释放锁。
+
+即使此时有多个 goroutine 同时进入了 doSlow 方法，因为双检查的机制，后续的 goroutine 会看到 o.done 的值为 1，也不会再次执行 f。
+
+这样既保证了并发的 goroutine 会等待 f 完成，而且还不会多次执行 f。
+
+```go
+type Once struct {
+    done uint32
+    m    Mutex
+}
+
+func (o *Once) Do(f func()) {
+    if atomic.LoadUint32(&o.done) == 0 {
+        o.doSlow(f)
+    }
+}
+
+
+func (o *Once) doSlow(f func()) {
+    o.m.Lock()
+    defer o.m.Unlock()
+    // 双检查
+    if o.done == 0 {
+        defer atomic.StoreUint32(&o.done, 1)
+        f()
+    }
+}
+```
+
+### 82. 使用 Once 可能出现的 2 种错误
+
+1. 死锁
+
+如果 f 中再次调用这个 Once 的 Do 方法的话，就会导致死锁的情况出现。这还不是无限递归的情况，而是的的确确的 Lock 的递归调用导致的死锁。
+
+2. 未初始化
+
+如果 f 方法执行的时候 panic，或者 f 执行初始化资源的时候失败了，这个时候，Once 还是会认为初次执行已经成功了，即使再次调用 Do 方法，也不会再次执行 f。
+
+我们可以自己实现一个类似 Once 的并发原语，既可以返回当前调用 Do 方法是否正确完成，还可以在初始化失败后调用 Do 方法再次尝试初始化，直到初始化成功才不再初始化了。
