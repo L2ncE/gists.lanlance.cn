@@ -2,6 +2,42 @@
 
 - [🙌🏻Hi there!](README.md)
 
+## 🧑🏻‍💻 计算机学习碎片 <a href="cs" id="cs"></a>
+
+- [Golang](cs/go.md)
+- [Python](cs/py.md)
+- [C++](cs/cpp.md)
+- [计算机网络](cs/cn.md)
+- [操作系统](cs/os.md)
+- [MySQL](cs/mysql.md)
+- [Redis](cs/redis.md)
+- [MongoDB](cs/mongo.md)
+- [对象存储](cs/objs.md)
+- [消息队列](cs/mq.md)
+- [Git](cs/git.md)
+- [Linux](cs/linux.md)
+- [高并发](cs/hc.md)
+- [分布式](cs/distributed.md)
+- [CI/CD](cs/ci.md)
+- [云原生](cs/cdnt.md)
+- [安全](cs/sc.md)
+- [数据结构与算法](cs/al.md)
+- [场景题](cs/scene.md)
+
+## 📝 Leetcode <a href="leetcode" id="leetcode"></a>
+
+- [二分查找](leetcode/erfen.md)
+- [动态规划](leetcode/donggui.md)
+- [哈希表](leetcode/hash.md)
+- [双指针](leetcode/doublezz.md)
+- [数学](leetcode/math.md)
+- [数据结构](leetcode/datastructure.md)
+- [DFS](leetcode/dfs.md)
+- [BFS](leetcode/bfs.md)
+- [位运算](leetcode/bit.md)
+- [模拟](leetcode/sim.md)
+- [剑指 Offer](leetcode/offer.md)
+
 ## ⛏ 数据挖掘 <a href="#data-mining" id="data-mining"></a>
 
 - [Matplotlib](data-mining/matplotlib/README.md)
@@ -30,39 +66,3 @@
   - [数组与数的运算](data-mining/numpy/shu-zu-yu-shu-de-yun-suan.md)
   - [数组与数组的运算](data-mining/numpy/shu-zu-yu-shu-zu-de-yun-suan.md)
   - [矩阵运算](data-mining/numpy/ju-zhen-yun-suan.md)
-
-## 📝 Leetcode <a href="leetcode" id="leetcode"></a>
-
-- [二分查找](leetcode/erfen.md)
-- [动态规划](leetcode/donggui.md)
-- [哈希表](leetcode/hash.md)
-- [双指针](leetcode/doublezz.md)
-- [数学](leetcode/math.md)
-- [数据结构](leetcode/datastructure.md)
-- [DFS](leetcode/dfs.md)
-- [BFS](leetcode/bfs.md)
-- [位运算](leetcode/bit.md)
-- [模拟](leetcode/sim.md)
-- [剑指 Offer](leetcode/offer.md)
-
-## 🧑🏻‍💻 计算机学习碎片 <a href="cs" id="cs"></a>
-
-- [Golang](cs/go.md)
-- [Python](cs/py.md)
-- [C++](cs/cpp.md)
-- [计算机网络](cs/cn.md)
-- [操作系统](cs/os.md)
-- [MySQL](cs/mysql.md)
-- [Redis](cs/redis.md)
-- [MongoDB](cs/mongo.md)
-- [对象存储](cs/objs.md)
-- [消息队列](cs/mq.md)
-- [Git](cs/git.md)
-- [Linux](cs/linux.md)
-- [高并发](cs/hc.md)
-- [分布式](cs/distributed.md)
-- [CI/CD](cs/ci.md)
-- [云原生](cs/cdnt.md)
-- [安全](cs/sc.md)
-- [数据结构与算法](cs/al.md)
-- [场景题](cs/scene.md)
