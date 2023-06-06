@@ -77,3 +77,70 @@ Base 理论的核心思想是最终一致性。
 ### 9. Paxos 算法
 
 #### Quorum 选举算法
+
+用一句话解释那就是，在 N 个副本中，一次更新成功的如果有 W 个，那么我在读取数据时是要从大于 N－W 个副本中读取，这样就能至少读到一个更新的数据了。
+
+#### Quorum 的应用
+
+Quorum 机制无法保证强一致性，也就是无法实现任何时刻任何用户或节点都可以读到最近一次成功提交的副本数据。 Quorum 机制的使用需要配合一个获取最新成功提交的版本号的 metadata 服务，这样可以确定最新已经成功提交的版本号，然后从已经读到的数据中就可以确认最新写入的数据。
+
+#### Paxos 的节点角色
+
+- Proposer 提案者
+  - 不同的 Proposer 可以提出不同的甚至矛盾的 value，比如某个 Proposer 提议“将变量 X 设置为 1”，另一个 Proposer 提议“将变量 X 设置为 2”，但对同一轮 Paxos 过程，最多只有一个 value 被批准。
+- Acceptor 批准者
+  - 在集群中，Acceptor 有 N 个，Acceptor 之间完全对等独立，Proposer 提出的 value 必须获得超过半数（N/2+1）的 Acceptor 批准后才能通过。
+- Learner 学习者
+  - 这里 Leaner 的流程就参考了 Quorum 议会机制，某个 value 需要获得 W=N/2 + 1 的 Acceptor 批准，Learner 需要至少读取 N/2+1 个 Accpetor，最多读取 N 个 Acceptor 的结果后，才能学习到一个通过的 value。
+- Client 产生议题者
+  - Client 角色，作为产生议题者，实际不参与选举过程，比如发起修改请求的来源等。
+
+#### 选举过程
+
+1. 准备阶段
+
+Proposer 生成全局唯一且递增的 ProposalID，向 Paxos 集群的所有机器发送 Prepare 请求，这里不携带 value，只携带 N 即 ProposalID。 Acceptor 收到 Prepare 请求后，判断收到的 ProposalID 是否比之前已响应的所有提案的 N 大，如果是，则：
+
+- 在本地持久化 N，可记为 Max_N；
+- 回复请求，并带上已经 Accept 的提案中 N 最大的 value，如果此时还没有已经 Accept 的提案，则返回 value 为空；
+- 做出承诺，不会 Accept 任何小于 Max_N 的提案。 如果否，则不回复或者回复 Error。
+
+2. 选举阶段
+
+Proposer 提出一个提案并发送给 Acceptor；Acceptor 收到提案后会回复 Prepare，如果回复数量大于一半且 value 为空，则 Proposer 发送 Accept 请求，并带上自己指定的 value；如果回复数量大于一半且有的回复 value 不为空，则 Proposer 发送 Accept 请求，并带上 ProposalID 最大的 value；如果回复数量小于等于一半，则 Proposer 尝试更新生成更大的 ProposalID 再进行下一轮；Accpetor 收到 Accept 请求后，如果收到的 N 大于等于 Max_N，则回复提交成功并持久化 N 和 value，否则不回复或者回复提交失败；最后，Proposer 统计所有成功提交的 Accept 回复，如果回复数量大于一半，则表示提交 value 成功，并通知所有 Proposer 和 Learner；否则，尝试更新生成更大的 ProposalID 进入下一轮。
+
+### 9. Paxos 常见的问题
+
+1. 如果半数以内的 Acceptor 失效，如何正常运行？
+
+第一种，如果半数以内的 Acceptor 失效时还没确定最终的 value，此时所有的 Proposer 会重新竞争提案，最终有一个提案会成功提交。
+
+第二种，如果半数以内的 Acceptor 失效时已确定最终的 value，此时所有的 Proposer 提交前必须以最终的 value 提交，也就是 Value 实际已经生效，此值可以被获取，并不再修改。
+
+2. Acceptor 需要接受更大的 N，也就是 ProposalID 有什么意义？
+
+这种机制可以防止其中一个 Proposer 崩溃宕机产生阻塞问题，允许其他 Proposer 用更大 ProposalID 来抢占临时的访问权。
+
+### 10. Zab 与 Paxos 算法的联系与区别
+
+Paxos 的思想在很多分布式组件中都可以看到，Zab 协议可以认为是基于 Paxos 算法实现的，先来看下两者之间的联系：
+
+- 都存在一个 Leader 进程的角色，负责协调多个 Follower 进程的运行
+- 都应用 Quorum 机制，Leader 进程都会等待超过半数的 Follower 做出正确的反馈后，才会将一个提案进行提交
+- 在 Zab 协议中，Zxid 中通过 epoch 来代表当前 Leader 周期，在 Paxos 算法中，同样存在这样一个标识，叫做 Ballot Number
+
+两者之间的区别是，Paxos 是理论，Zab 是实践，Paxos 是论文性质的，目的是设计一种通用的分布式一致性算法，而 Zab 协议应用在 ZooKeeper 中，是一个特别设计的崩溃可恢复的原子消息广播算法。
+
+Zab 协议增加了崩溃恢复的功能，当 Leader 服务器不可用，或者已经半数以上节点失去联系时，ZooKeeper 会进入恢复模式选举新的 Leader 服务器，使集群达到一个一致的状态。
+
+### 11. 基于消息补偿的最终一致性
+
+（1）系统收到下单请求，将订单业务数据存入到订单库中，并且同时存储该订单对应的消息数据，比如购买商品的 ID 和数量，消息数据与订单库为同一库，更新订单和存储消息为一个本地事务，要么都成功，要么都失败。
+
+（2）库存服务通过消息中间件收到库存更新消息，调用库存服务进行业务操作，同时返回业务处理结果。
+
+（3）消息生产方，也就是订单服务收到处理结果后，将本地消息表的数据删除或者设置为已完成。
+
+（4）设置异步任务，定时去扫描本地消息表，发现有未完成的任务则重试，保证最终一致性。
+
+### 12. 对比两阶段提交，三阶段协议有哪些改进？
