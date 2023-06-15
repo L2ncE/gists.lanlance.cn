@@ -68,4 +68,3 @@
 ## 🫥 CQUPT <a href="#cqupt" id="cqupt"></a>
 
 - [算法设计与分析](cqupt/algo.md)
-- [机器学习](cqupt/ml.md)
