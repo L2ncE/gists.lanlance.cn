@@ -382,4 +382,10 @@ PromQL 就是对这样一批样本数据做查询和计算操作。
 - 饱和度：资源排队工作的指标，无法再处理额外的工作。通常用队列长度表示，比如在 iostat 里看到的 aqu-sz 就是队列长度。
 - 错误：资源错误事件的计数。比如 malloc()失败次数、通过 ifconfig 看到的 errors、dropped 包量。有很多错误是以系统错误日志的方式暴露的，没法直接拿到某个统计指标，此时可以进行日志关键字监控。
 
-### 44.
+### 44. OpenTelemetry 架构
+
+OpenTelemetry 主要包括了下面三个部分：
+
+- 跨语言规范 （Specification）；
+- API / SDK；
+- 接收、转换和导出遥测数据的工具，又称为 OpenTelemetry Collector。
