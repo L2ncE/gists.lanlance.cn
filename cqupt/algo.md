@@ -169,3 +169,15 @@ V 和 E 分别为图的顶点和边的数量。数据结构为队列，顶点顺
 ### 最优二叉查找树
 
 ![](https://picture.lanlance.cn/i/2023/06/14/6489cdefeb4bd.png)
+
+### Warshall
+
+![](https://picture.lanlance.cn/i/2023/06/15/648ae1634c75c.png)
+
+`R[i][j][k] == R[i][j][k - 1] || R[i][k][k - 1] && R[k][j][k - 1]`
+
+### Floyd
+
+![](https://picture.lanlance.cn/i/2023/06/15/648ae1cf3aa51.png)
+
+`D[i][j] == min(D[i][j], D[i][k] + D[k][j])`
