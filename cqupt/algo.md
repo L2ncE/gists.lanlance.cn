@@ -181,3 +181,19 @@ V 和 E 分别为图的顶点和边的数量。数据结构为队列，顶点顺
 ![](https://picture.lanlance.cn/i/2023/06/15/648ae1cf3aa51.png)
 
 `D[i][j] == min(D[i][j], D[i][k] + D[k][j])`
+
+### 哈夫曼编码
+
+二叉树左分支为 0，右分支为 1。
+
+### P 类
+
+![](https://picture.lanlance.cn/i/2023/06/15/648b0916539be.png)
+
+### NP 类
+
+![](https://picture.lanlance.cn/i/2023/06/15/648b0931d91a8.png)
+
+![](https://picture.lanlance.cn/i/2023/06/15/648b09d91deb8.png)
+
+![](https://picture.lanlance.cn/i/2023/06/15/648b09e83eb9d.png)
