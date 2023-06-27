@@ -68,3 +68,4 @@
 ## 🫥 CQUPT <a href="#cqupt" id="cqupt"></a>
 
 - [算法设计与分析](cqupt/algo.md)
+- [计算机组织与结构](cqupt/jz.md)
