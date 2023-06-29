@@ -69,4 +69,3 @@
 
 - [算法设计与分析](cqupt/algo.md)
 - [计算机组织与结构](cqupt/jz.md)
-- [数据库原理](cqupt/db.md)
