@@ -386,4 +386,221 @@ fn main() {
 }
 ```
 
+### 28. 为具体的泛型类型实现方法
+
+对于 `Point<T>` 类型，你不仅能定义基于 `T` 的方法，还能针对特定的具体类型，进行方法定义：
+
+```rust
+impl Point<f32> {
+    fn distance_from_origin(&self) -> f32 {
+        (self.x.powi(2) + self.y.powi(2)).sqrt()
+    }
+}
+```
+
+这段代码意味着 `Point<f32>` 类型会有一个方法 `distance_from_origin`，而其他 `T` 不是 `f32` 类型的 `Point<T>` 实例则没有定义此方法。这个方法计算点实例与坐标 `(0.0, 0.0)` 之间的距离，并使用了只能用于浮点型的数学运算符。
+
+### 29. 泛型的性能
+
+在 Rust 中泛型是零成本的抽象，意味着你在使用泛型时，完全不用担心性能上的问题。
+
+但是任何选择都是权衡得失的，Rust 是在编译期为泛型对应的多个类型，生成各自的代码，因此损失了编译速度和增大了最终生成文件的大小。
+
+### 30. const 泛型
+
+针对类型实现的泛型，所有的泛型都是为了抽象不同的类型，const 泛型则是针对值的泛型。
+
+```rust
+fn display_array<T: std::fmt::Debug, const N: usize>(arr: [T; N]) {
+    println!("{:?}", arr);
+}
+fn main() {
+    let arr: [i32; 3] = [1, 2, 3];
+    display_array(arr);
+
+    let arr: [i32; 2] = [1, 2];
+    display_array(arr);
+}
+```
+
+如上所示，我们定义了一个类型为 `[T; N]` 的数组，其中 `T` 是一个基于类型的泛型参数，这个和之前讲的泛型没有区别，而重点在于 `N` 这个泛型参数，它是一个基于值的泛型参数！因为它用来替代的是数组的长度。
+
+### 31. 特征孤儿规则
+
+**如果你想要为类型** `A` **实现特征** `T`**，那么** `A` **或者** `T` **至少有一个是在当前作用域中定义的**。
+
+### 32. 使用特征作为函数参数
+
+```rust
+pub fn notify(item: &impl Summary) {
+    println!("Breaking news! {}", item.summarize());
+}
+```
+
+`impl Summary`，顾名思义，它的意思是 **实现了 `Summary` 特征** 的 `item` 参数。
+
+你可以使用任何实现了 `Summary` 特征的类型作为该函数的参数，同时在函数体内，还可以调用该特征的方法，例如 `summarize` 方法。
+
+### 33. 多重约束
+
+除了单个约束条件，我们还可以指定多个约束条件，例如除了让参数实现 `Summary` 特征外，还可以让参数实现 `Display` 特征以控制它的格式化输出：
+
+```rust
+pub fn notify(item: &(impl Summary + Display)) {}
+```
+
+除了上述的语法糖形式，还能使用特征约束的形式：
+
+```rust
+pub fn notify<T: Summary + Display>(item: &T) {}
+```
+
+通过这两个特征，就可以使用 `item.summarize` 方法，以及通过 `println!("{}", item)` 来格式化输出 `item`。
+
+### 34. Where 约束
+
+```rust
+fn some_function<T, U>(t: &T, u: &U) -> i32
+    where T: Display + Clone,
+          U: Clone + Debug
+{}
+```
+
+### 35. 使用条件约束有条件地实现方法或特征
+
+```rust
+use std::fmt::Display;
+
+struct Pair<T> {
+    x: T,
+    y: T,
+}
+
+impl<T> Pair<T> {
+    fn new(x: T, y: T) -> Self {
+        Self {
+            x,
+            y,
+        }
+    }
+}
+
+impl<T: Display + PartialOrd> Pair<T> {
+    fn cmp_display(&self) {
+        if self.x >= self.y {
+            println!("The largest member is x = {}", self.x);
+        } else {
+            println!("The largest member is y = {}", self.y);
+        }
+    }
+}
+```
+
+`cmp_display` 方法，并不是所有的 `Pair<T>` 结构体对象都可以拥有，只有 `T` 同时实现了 `Display + PartialOrd` 的 `Pair<T>` 才可以拥有此方法。该函数可读性会更好，因为泛型参数、参数、返回值都在一起，可以快速的阅读，同时每个泛型参数的特征也在新的代码行中通过**特征约束**进行了约束。
+
+**也可以有条件地实现特征**, 例如，标准库为任何实现了 `Display` 特征的类型实现了 `ToString` 特征：
+
+```rust
+impl<T: Display> ToString for T {
+    // --snip--
+}
+```
+
+### 36. 通过 derive 派生特征
+
+形如 `#[derive(Debug)]` 的代码，这种是一种特征派生语法，被 `derive` 标记的对象会自动实现对应的默认特征代码，继承相应的功能。
+
+例如 `Debug` 特征，它有一套自动实现的默认代码，当你给一个结构体标记后，就可以使用 `println!("{:?}", s)` 的形式打印该结构体的对象。
+
+### 37. 特征对象
+
+可以通过 `&` 引用或者 `Box<T>` 智能指针的方式来创建特征对象。
+
+```rust
+trait Draw {
+    fn draw(&self) -> String;
+}
+
+impl Draw for u8 {
+    fn draw(&self) -> String {
+        format!("u8: {}", *self)
+    }
+}
+
+impl Draw for f64 {
+    fn draw(&self) -> String {
+        format!("f64: {}", *self)
+    }
+}
+
+// 若 T 实现了 Draw 特征， 则调用该函数时传入的 Box<T> 可以被隐式转换成函数参数签名中的 Box<dyn Draw>
+fn draw1(x: Box<dyn Draw>) {
+    // 由于实现了 Deref 特征，Box 智能指针会自动解引用为它所包裹的值，然后调用该值对应的类型上定义的 `draw` 方法
+    x.draw();
+}
+
+fn draw2(x: &dyn Draw) {
+    x.draw();
+}
+
+fn main() {
+    let x = 1.1f64;
+    // do_something(&x);
+    let y = 8u8;
+
+    // x 和 y 的类型 T 都实现了 `Draw` 特征，因为 Box<T> 可以在函数调用时隐式地被转换为特征对象 Box<dyn Draw> 
+    // 基于 x 的值创建一个 Box<f64> 类型的智能指针，指针指向的数据被放置在了堆上
+    draw1(Box::new(x));
+    // 基于 y 的值创建一个 Box<u8> 类型的智能指针
+    draw1(Box::new(y));
+    draw2(&x);
+    draw2(&y);
+}
+```
+
+上面代码，有几个非常重要的点：
+
+- `draw1` 函数的参数是 `Box<dyn Draw>` 形式的特征对象，该特征对象是通过 `Box::new(x)` 的方式创建的
+- `draw2` 函数的参数是 `&dyn Draw` 形式的特征对象，该特征对象是通过 `&x` 的方式创建的
+- `dyn` 关键字只用在特征对象的类型声明上，在创建时无需使用 `dyn`
+
+因此，可以使用特征对象来代表泛型或具体的类型。
+
+### 38. 特征对象的动态分发
+
+泛型是在编译期完成处理的：编译器会为每一个泛型参数对应的具体类型生成一份代码，这种方式是**静态分发(static dispatch)**，因为是在编译期完成的，对于运行期性能完全没有任何影响。
+
+与静态分发相对应的是**动态分发(dynamic dispatch)**，在这种情况下，直到运行时，才能确定需要调用什么方法。之前代码中的关键字 `dyn` 正是在强调这一“动态”的特点。
+
+### 39. Self 和 self
+
+在 Rust 中，有两个 `self`，一个指代当前的实例对象，一个指代特征或者方法类型的别名：
+
+```rust
+trait Draw {
+    fn draw(&self) -> Self;
+}
+
+#[derive(Clone)]
+struct Button;
+impl Draw for Button {
+    fn draw(&self) -> Self {
+        return self.clone()
+    }
+}
+
+fn main() {
+    let button = Button;
+    let newb = button.draw();
+}
+```
+
+上述代码中，`self` 指代的就是当前的实例对象，也就是 `button.draw()` 中的 `button` 实例，`Self` 则指代的是 `Button` 类型。
+
+### 40. 特征对象的限制
+
+不是所有特征都能拥有特征对象，只有对象安全的特征才行。当一个特征的所有方法都有如下属性时，它的对象才是安全的：
+
+- 方法的返回类型不能是 `Self`
+- 方法没有任何泛型参数
 
