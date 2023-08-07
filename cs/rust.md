@@ -604,3 +604,159 @@ fn main() {
 - 方法的返回类型不能是 `Self`
 - 方法没有任何泛型参数
 
+### 41. 关联类型
+
+使用泛型，你将得到以下的代码：
+
+```rust
+trait Container<A,B> {
+    fn contains(&self,a: A,b: B) -> bool;
+}
+
+fn difference<A,B,C>(container: &C) -> i32
+  where
+    C : Container<A,B> {...}
+```
+
+可以看到，由于使用了泛型，导致函数头部也必须增加泛型的声明，而使用关联类型，将得到可读性好得多的代码：
+
+```rust
+trait Container{
+    type A;
+    type B;
+    fn contains(&self, a: &Self::A, b: &Self::B) -> bool;
+}
+
+fn difference<C: Container>(container: &C) {}
+```
+
+### 42. 完全限定语法
+
+```rust
+fn main() {
+    println!("A baby dog is called a {}", <Dog as Animal>::baby_name());
+}
+```
+
+在尖括号中，通过 `as` 关键字，我们向 Rust 编译器提供了类型注解，也就是 `Animal` 就是 `Dog`，而不是其他动物，因此最终会调用 `impl Animal for Dog` 中的方法
+
+### 43. 特征定义中的特征约束
+
+有时，我们会需要让某个特征 A 能使用另一个特征 B 的功能(另一种形式的特征约束)，这种情况下，不仅仅要为类型实现特征 A，还要为类型实现特征 B 才行，这就是 `supertrait` (实在不知道该如何翻译，有大佬指导下嘛？)
+
+例如有一个特征 `OutlinePrint`，它有一个方法，能够对当前的实现类型进行格式化输出：
+
+```rust
+use std::fmt::Display;
+
+trait OutlinePrint: Display {
+    fn outline_print(&self) {
+        let output = self.to_string();
+        let len = output.len();
+        println!("{}", "*".repeat(len + 4));
+        println!("*{}*", " ".repeat(len + 2));
+        println!("* {} *", output);
+        println!("*{}*", " ".repeat(len + 2));
+        println!("{}", "*".repeat(len + 4));
+    }
+}
+```
+
+### 44. NewType
+
+在特征章节中，有提到孤儿规则，简单来说，就是特征或者类型必需至少有一个是本地的，才能在此类型上定义特征。
+
+这里提供一个办法来绕过孤儿规则，那就是使用 **newtype 模式**。就是为一个元组结构体创建新类型。该元组结构体封装有一个字段，该字段就是希望实现特征的具体类型。
+
+下面来看一个例子，我们有一个动态数组类型： `Vec<T>`，它定义在标准库中，还有一个特征 `Display`，它也定义在标准库中，如果没有 `newtype`，我们是无法为 `Vec<T>` 实现 `Display` 的：
+
+```rust
+use std::fmt;
+
+struct Wrapper(Vec<String>);
+
+impl fmt::Display for Wrapper {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "[{}]", self.0.join(", "))
+    }
+}
+
+fn main() {
+    let w = Wrapper(vec![String::from("hello"), String::from("world")]);
+    println!("w = {}", w);
+}
+```
+
+注意到我们怎么访问里面的数组吗？`self.0.join(", ")`，是的，很啰嗦，因为需要先从 `Wrapper` 中取出数组: `self.0`，然后才能执行 `join` 方法。
+
+类似的，任何数组上的方法，你都无法直接调用，需要先用 `self.0` 取出数组，然后再进行调用。
+
+Rust 提供了一个特征叫 `Deref`，实现该特征后，可以自动做一层类似类型转换的操作，可以将 `Wrapper` 变成 `Vec<String>` 来使用。这样就会像直接使用数组那样去使用 `Wrapper`，而无需为每一个操作都添加上 `self.0`。
+
+同时，如果不想 `Wrapper` 暴露底层数组的所有方法，我们还可以为 `Wrapper` 去重载这些方法，实现隐藏的目的。
+
+### 45. 存储不同类型的元素
+
+数组的元素必须类型相同，但是也提到了解决方案：那就是通过使用枚举类型和特征对象来实现不同类型元素的存储。先来看看通过枚举如何实现：
+
+```rust
+#[derive(Debug)]
+enum IpAddr {
+    V4(String),
+    V6(String)
+}
+fn main() {
+    let v = vec![
+        IpAddr::V4("127.0.0.1".to_string()),
+        IpAddr::V6("::1".to_string())
+    ];
+
+    for ip in v {
+        show_addr(ip)
+    }
+}
+
+fn show_addr(ip: IpAddr) {
+    println!("{:?}",ip);
+}
+```
+
+数组 `v` 中存储了两种不同的 `ip` 地址，但是这两种都属于 `IpAddr` 枚举类型的成员，因此可以存储在数组中。
+
+再来看看特征对象的实现：
+
+```rust
+trait IpAddr {
+    fn display(&self);
+}
+
+struct V4(String);
+impl IpAddr for V4 {
+    fn display(&self) {
+        println!("ipv4: {:?}",self.0)
+    }
+}
+struct V6(String);
+impl IpAddr for V6 {
+    fn display(&self) {
+        println!("ipv6: {:?}",self.0)
+    }
+}
+
+fn main() {
+    let v: Vec<Box<dyn IpAddr>> = vec![
+        Box::new(V4("127.0.0.1".to_string())),
+        Box::new(V6("::1".to_string())),
+    ];
+
+    for ip in v {
+        ip.display();
+    }
+}
+```
+
+比枚举实现要稍微复杂一些，我们为 `V4` 和 `V6` 都实现了特征 `IpAddr`，然后将它俩的实例用 `Box::new` 包裹后，存在了数组 `v` 中，需要注意的是，这里必须手动地指定类型：`Vec<Box<dyn IpAddr>>`，表示数组 `v` 存储的是特征 `IpAddr` 的对象，这样就实现了在数组中存储不同的类型。
+
+在实际使用场景中，**特征对象数组要比枚举数组常见很多**，主要原因在于特征对象非常灵活，而编译器对枚举的限制较多，且无法动态增加类型。
+
+
