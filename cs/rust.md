@@ -758,5 +758,167 @@ fn main() {
 比枚举实现要稍微复杂一些，我们为 `V4` 和 `V6` 都实现了特征 `IpAddr`，然后将它俩的实例用 `Box::new` 包裹后，存在了数组 `v` 中，需要注意的是，这里必须手动地指定类型：`Vec<Box<dyn IpAddr>>`，表示数组 `v` 存储的是特征 `IpAddr` 的对象，这样就实现了在数组中存储不同的类型。
 
 在实际使用场景中，**特征对象数组要比枚举数组常见很多**，主要原因在于特征对象非常灵活，而编译器对枚举的限制较多，且无法动态增加类型。
+### 46. 函数签名中的生命周期标注
 
+从两个字符串切片中返回较长的那个
 
+```rust
+fn longest<'a>(x: &'a str, y: &'a str) -> &'a str {
+    if x.len() > y.len() {
+        x
+    } else {
+        y
+    }
+}
+```
+
+- 和泛型一样，使用生命周期参数，需要先声明 `<'a>`
+- `x`、`y` 和返回值至少活得和 `'a` 一样久 (因为返回值要么是 `x`，要么是 `y`)
+
+### 47. 结构体中的生命周期
+
+```rust
+struct ImportantExcerpt<'a> {
+    part: &'a str,
+}
+
+fn main() {
+    let novel = String::from("Call me Ishmael. Some years ago...");
+    let first_sentence = novel.split('.').next().expect("Could not find a '.'");
+    let i = ImportantExcerpt {
+        part: first_sentence,
+    };
+}
+```
+
+`ImportantExcerpt` 结构体中有一个引用类型的字段 `part`，因此需要为它标注上生命周期。结构体的生命周期标注语法跟泛型参数语法很像，需要对生命周期参数进行声明 `<'a>`。该生命周期标注说明，**结构体 `ImportantExcerpt` 所引用的字符串 `str` 必须比该结构体活得更久**。
+
+### 48. 生命周期消除
+
+1. **每一个引用参数都会获得独自的生命周期**
+    
+    例如一个引用参数的函数就有一个生命周期标注: `fn foo<'a>(x: &'a i32)`，两个引用参数的有两个生命周期标注:`fn foo<'a, 'b>(x: &'a i32, y: &'b i32)`, 依此类推。
+    
+2. **若只有一个输入生命周期(函数参数中只有一个引用类型)，那么该生命周期会被赋给所有的输出生命周期**，也就是所有返回值的生命周期都等于该输入生命周期
+    
+    例如函数 `fn foo(x: &i32) -> &i32`，`x` 参数的生命周期会被自动赋给返回值 `&i32`，因此该函数等同于 `fn foo<'a>(x: &'a i32) -> &'a i32`
+    
+3. **若存在多个输入生命周期，且其中一个是 `&self` 或 `&mut self`，则 `&self` 的生命周期被赋给所有的输出生命周期**
+    
+    拥有 `&self` 形式的参数，说明该函数是一个 `方法`，该规则让方法的使用便利度大幅提升。
+
+### 49. 生命周期约束
+
+- `'a: 'b`，是生命周期约束语法，跟泛型约束非常相似，用于说明 `'a` 必须比 `'b` 活得久
+- 可以把 `'a` 和 `'b` 都在同一个地方声明（如上），或者分开声明但通过 `where 'a: 'b` 约束生命周期关系，如下：
+
+```rust
+impl<'a> ImportantExcerpt<'a> {
+    fn announce_and_return_part<'b>(&'a self, announcement: &'b str) -> &'b str
+    where
+        'a: 'b,
+    {
+        println!("Attention please: {}", announcement);
+        self.part
+    }
+}
+```
+
+### 50. 静态生命周期
+
+在 Rust 中有一个非常特殊的生命周期，那就是 `'static`，拥有该生命周期的引用可以和整个程序活得一样久。
+
+```rust
+let s: &'static str = "我没啥优点，就是活得久，嘿嘿";
+```
+
+### 51. 线程 panic 后，程序是否会终止
+
+如果是 `main` 线程，则程序会终止，如果是其它子线程，该线程会终止，但是不会影响 `main` 线程。因此，尽量不要在 `main` 线程中做太多任务，将这些任务交由子线程去做，就算子线程 `panic` 也不会导致整个程序的结束。
+
+### 52. 对返回的错误进行处理
+
+直接 `panic` 还是过于粗暴，因为实际上 IO 的错误有很多种，我们需要对部分错误进行特殊处理，而不是所有错误都直接崩溃：
+
+```rust
+use std::fs::File;
+use std::io::ErrorKind;
+
+fn main() {
+    let f = File::open("hello.txt");
+
+    let f = match f {
+        Ok(file) => file,
+        Err(error) => match error.kind() {
+            ErrorKind::NotFound => match File::create("hello.txt") {
+                Ok(fc) => fc,
+                Err(e) => panic!("Problem creating the file: {:?}", e),
+            },
+            other_error => panic!("Problem opening the file: {:?}", other_error),
+        },
+    };
+}
+```
+
+上面代码在匹配出 `error` 后，又对 `error` 进行了详细的匹配解析，最终结果：
+
+- 如果是文件不存在错误 `ErrorKind::NotFound`，就创建文件，这里创建文件`File::create` 也是返回 `Result`，因此继续用 `match` 对其结果进行处理：创建成功，将新的文件句柄赋值给 `f`，如果失败，则 `panic`
+- 剩下的错误，一律 `panic`
+
+### 53. 失败就 panic: unwrap 和 except
+
+```rust
+use std::fs::File;
+
+fn main() {
+    let f = File::open("hello.txt").unwrap();
+}
+```
+
+如果调用这段代码时 _hello.txt_ 文件不存在，那么 `unwrap` 就将直接 `panic`
+`expect` 跟 `unwrap` 很像，也是遇到错误直接 `panic`, 但是会带上自定义的错误提示信息，相当于重载了错误打印的函数：
+
+```rust
+use std::fs::File;
+
+fn main() {
+    let f = File::open("hello.txt").expect("Failed to open hello.txt");
+}
+```
+
+### 54. ? 宏
+
+```rust
+use std::fs::File;
+use std::io;
+use std::io::Read;
+
+fn read_username_from_file() -> Result<String, io::Error> {
+    let mut f = File::open("hello.txt")?;
+    let mut s = String::new();
+    f.read_to_string(&mut s)?;
+    Ok(s)
+}
+```
+
+其实 `?` 就是一个宏，它的作用跟下面的 `match`
+
+```rust
+let mut f = match f {
+    // 打开文件成功，将file句柄赋值给f
+    Ok(file) => file,
+    // 打开文件失败，将错误返回(向上传播)
+    Err(e) => return Err(e),
+};
+```
+
+### 55. ? 用于 Option 的返回
+
+```rust
+fn first(arr: &[i32]) -> Option<&i32> {
+   let v = arr.get(0)?;
+   Some(v)
+}
+```
+
+上面的函数中，`arr.get` 返回一个 `Option<&i32>` 类型，因为 `?` 的使用，如果 `get` 的结果是 `None`，则直接返回 `None`，如果是 `Some(&i32)`，则把里面的值赋给 `v`。
