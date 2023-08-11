@@ -234,9 +234,9 @@ Cgroups 是一种 Linux 内核功能，可以限制和隔离进程的资源使�
 ### 22. CMD 和 ENTRYPOINT
 
 - Dockerfile 中如果使用了 `ENTRYPOINT` 指令，启动 Docker 容器时需要使用 --entrypoint 参数才能覆盖 Dockerfile 中的 `ENTRYPOINT` 指令，而使用 `CMD` 设置的命令则可以被 `docker run` 后面的参数直接覆盖。
-- `ENTRYPOINT`指令可以结合`CMD`指令使用，也可以单独使用，而`CMD`指令只能单独使用。
+- `ENTRYPOINT` 指令可以结合 `CMD` 指令使用，也可以单独使用，而 `CMD` 指令只能单独使用。
 
-如果你希望你的镜像足够灵活，推荐使用`CMD`指令。如果你的镜像只执行单一的具体程序，并且不希望用户在执行`docker run`时覆盖默认程序，建议使用`ENTRYPOINT`。
+如果你希望你的镜像足够灵活，推荐使用 `CMD` 指令。如果你的镜像只执行单一的具体程序，并且不希望用户在执行 `docker run` 时覆盖默认程序，建议使用 `ENTRYPOINT`。
 
 最后再强调一下，无论使用 `CMD` 还是 `ENTRYPOINT`，都尽量使用 `exec` 模式。
 
@@ -284,7 +284,7 @@ dockerd 是 Docker 服务端的后台常驻进程，用来接收客户端发送�
 
 - docker-init
 
-在容器内部，当我们自己的业务进程没有回收子进程的能力时，在执行 docker run 启动容器时可以添加 --init 参数，此时 Docker 会使用 docker-init 作为1号进程，帮你管理容器内子进程，例如回收僵尸进程等。
+在容器内部，当我们自己的业务进程没有回收子进程的能力时，在执行 docker run 启动容器时可以添加 --init 参数，此时 Docker 会使用 docker-init 作为 1 号进程，帮你管理容器内子进程，例如回收僵尸进程等。
 
 - docker-proxy
 
@@ -331,3 +331,296 @@ runc 是一个标准的 OCI 容器运行时的实现，它是一个命令行工�
 ### 30. Docker 卷的实现原理
 
 Docker 卷的实现原理是在主机的 /var/lib/docker/volumes 目录下，根据卷的名称创建相应的目录，然后在每个卷的目录下创建 data 目录，在容器启动时如果使用 --mount 参数，Docker 会把主机上的目录直接映射到容器的指定目录下，实现数据持久化。
+
+### 31. Kubernetes 生成对象的 YAML 模版
+
+使用参数 `--dry-run=client -o yaml` 可以生成对象的 YAML 模板，简化编写工作。
+
+### 32. 如何理解 Kubernetes 中的 Pod
+
+**为了解决多应用联合运行的问题，同时还要不破坏容器的隔离，就需要在容器外面再建立一个“收纳舱”**，让多个容器既保持相对独立，又能够小范围共享网络、存储等资源，而且永远是“绑在一起”的状态。
+
+Kubernetes 让 Pod 去编排处理容器，然后把 Pod 作为应用调度部署的**最小单位**，Pod 也因此成为了 Kubernetes 世界里的“原子”。
+#### 如何使用 YAML 描述 Pod
+
+```yml
+# kubectl apply -f ngx-pod.yml
+# kubectl logs ngx-pod
+# kubectl delete -f ngx-pod.yaml
+# kubectl delete pod ngx-pod
+
+# kubectl explain pod.spec
+# kubectl explain pod.spec.containers
+# kubectl explain pod.spec.containers.env
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ngx-pod
+  labels:
+    env: demo
+    owner: L2ncE
+
+spec:
+  containers:
+  - image: nginx:alpine
+    name: ngx
+    ports:
+    - containerPort: 80
+```
+
+### 33. 进入/拷贝文件到 Pod
+
+```sh
+kubectl cp a.txt ngx-pod:/tmp
+kubectl exec -it ngx-pod -- sh
+```
+
+### 34. Job/CronJob
+
+“离线业务”可以分为两种。一种是“**临时任务**”，跑完就完事了，下次有需求了说一声再重新安排；另一种是“**定时任务**”，可以按时按点周期运行，不需要过多干预。
+
+对应到 Kubernetes 里，“临时任务”就是 API 对象**Job**，“定时任务”就是 API 对象**CronJob**，使用这两个对象你就能够在 Kubernetes 里调度管理任意的离线业务了。
+
+#### 如何使用 YAML 描述 Job
+
+- apiVersion 不是 `v1`，而是 `batch/v1`。
+- kind 是 `Job`，这个和对象的名字是一致的。
+- metadata 里仍然要有 `name` 标记名字，也可以用 `labels` 添加任意的标签。
+
+```yml
+# kubectl apply -f job.yml
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: echo-job
+
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - image: busybox
+        name: echo-job
+        imagePullPolicy: IfNotPresent
+        command: ["/bin/echo"]
+        args: ["hello", "world"]
+```
+
+你会注意到 Job 的描述与 Pod 很像，但又有些不一样，主要的区别就在“spec”字段里，多了一个 `template` 字段，然后又是一个“spec”，显得有点怪。
+
+它其实就是在 Job 对象里应用了组合模式，`template` 字段定义了一个“**应用模板**”，里面嵌入了一个 Pod，这样 Job 就可以从这个模板来创建出 Pod。
+
+而这个 Pod 因为受 Job 的管理控制，不直接和 apiserver 打交道，也就没必要重复 apiVersion 等“头字段”，只需要定义好关键的 `spec`，描述清楚容器相关的信息就可以了，可以说是一个“无头”的 Pod 对象。
+
+列出几个控制离线作业的重要字段：
+- **activeDeadlineSeconds**，设置 Pod 运行的超时时间。
+- **backoffLimit**，设置 Pod 的失败重试次数。
+- **completions**，Job 完成需要运行多少个 Pod，默认是 1 个。
+- **parallelism**，它与 completions 相关，表示允许并发运行的 Pod 数量，避免过多占用资源。
+
+要注意这 4 个字段并不在 `template` 字段下，而是在 `spec` 字段下，所以它们是属于 Job 级别的，用来控制模板里的 Pod 对象。
+
+#### 如何使用 YAML 描述 CronJob
+
+```yml
+# kubectl apply -f cronjob.yml
+
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: echo-cj
+
+spec:
+  schedule: '*/1 * * * *'
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - image: busybox
+            name: echo-cj
+            imagePullPolicy: IfNotPresent
+            command: ["/bin/echo"]
+            args: ["hello", "world"]
+```
+
+我们还是重点关注它的 `spec` 字段，你会发现它居然连续有三个 `spec` 嵌套层次：
+
+- 第一个 `spec` 是 CronJob 自己的对象规格声明
+- 第二个 `spec` 从属于“jobTemplate”，它定义了一个 Job 对象。
+- 第三个 `spec` 从属于“template”，它定义了 Job 里运行的 Pod。
+
+### 35. ConfigMap/Secret
+
+应用程序有很多类别的配置信息，但从数据安全的角度来看可以分成两类：
+
+- 一类是明文配置，也就是不保密，可以任意查询修改，比如服务端口、运行参数、文件路径等等。
+- 另一类则是机密配置，由于涉及敏感信息需要保密，不能随便查看，比如密码、密钥、证书等等。
+
+这两类配置信息本质上都是字符串，只是由于安全性的原因，在存放和使用方面有些差异，所以 Kubernetes 也就定义了两个 API 对象，**ConfigMap**用来保存明文配置，**Secret**用来保存秘密配置。
+
+#### 如何使用 YAML 描述 ConfigMap
+
+```yml
+# kubectl apply  -f cm.yml
+# kubectl delete -f cm.yml
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: info
+
+data:
+  count: '10'
+  debug: 'on'
+  path: '/etc/systemd'
+  greeting: |
+    say hello to kubernetes.
+```
+
+既然 ConfigMap 要存储数据，我们就需要用另一个含义更明确的字段“**data**”。
+
+#### 如何使用 YAML 描述 Secret
+
+了解了 ConfigMap 对象，我们再来看 Secret 对象就会容易很多，它和 ConfigMap 的结构和用法很类似，不过在 Kubernetes 里 Secret 对象又细分出很多类，比如：
+
+- 访问私有镜像仓库的认证信息
+- 身份识别的凭证信息
+- HTTPS 通信的证书和私钥
+- 一般的机密信息（格式由用户自行解释）
+
+```yml
+# echo -n "123456" | base64 # MTIzNDU2
+# echo -n "mysql" | base64  # bXlzcWw=
+
+# kubectl apply  -f secret.yml
+# kubectl delete -f secret.yml
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: user
+
+data:
+  name: cm9vdA==
+  pwd: MTIzNDU2
+  db: bXlzcWw=
+```
+
+#### 如何使用
+
+因为 ConfigMap 和 Secret 只是一些存储在 etcd 里的字符串，所以如果想要在运行时产生效果，就必须要以某种方式“**注入**”到 Pod 里，让应用去读取。在这方面的处理上 Kubernetes 和 Docker 是一样的，也是两种途径：**环境变量**和**加载文件**。
+
+##### 环境变量
+
+```yml
+# kubectl apply -f env-pod.yml
+# kubectl get pod
+# kubectl exec -it env-pod -- sh
+
+# in Pod:
+# echo $COUNT
+# echo $GREETING
+# echo $USERNAME
+# echo $PASSWORD
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: env-pod
+
+spec:
+  containers:
+  - env:
+      - name: COUNT
+        valueFrom:
+          configMapKeyRef:
+            name: info
+            key: count
+      - name: GREETING
+        valueFrom:
+          configMapKeyRef:
+            name: info
+            key: greeting
+      - name: USERNAME
+        valueFrom:
+          secretKeyRef:
+            name: user
+            key: name
+      - name: PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: user
+            key: pwd
+
+    image: busybox
+    name: busy
+    imagePullPolicy: IfNotPresent
+    command: ["/bin/sleep", "300"]
+
+```
+
+“**valueFrom**”字段指定了环境变量值的来源，可以是“**configMapKeyRef**”或者“**secretKeyRef**”，然后你要再进一步指定应用的 ConfigMap/Secret 的“**name**”和它里面的“**key**”，要当心的是这个“name”字段是 API 对象的名字，而不是 Key-Value 的名字。
+
+##### Volume
+
+在 Pod 里挂载 Volume 很容易，只需要在“**spec**”里增加一个“**volumes**”字段，然后再定义卷的名字和引用的 ConfigMap/Secret 就可以了。要注意的是 Volume 属于 Pod，不属于容器，所以它和字段“containers”是同级的，都属于“spec”。
+
+```yml
+# kubectl apply -f vol-pod.yml
+# kubectl get pod
+# kubectl exec -it vol-pod -- sh
+
+# in Pod:
+# cat /tmp/cm-items/greeting
+# cat /tmp/sec-items/db
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: vol-pod
+
+spec:
+  volumes:
+  - name: cm-vol
+    configMap:
+      name: info
+  - name: sec-vol
+    secret:
+      secretName: user
+
+  containers:
+  - volumeMounts:
+    - mountPath: /tmp/cm-items
+      name: cm-vol
+    - mountPath: /tmp/sec-items
+      name: sec-vol
+
+    image: busybox
+    name: busy
+    imagePullPolicy: IfNotPresent
+    command: ["/bin/sleep", "300"]
+
+```
+
+首先需要 Volume 的定义，有了 Volume 的定义之后，就可以在容器里挂载了，这要用到“**volumeMounts**”字段，正如它的字面含义，可以把定义好的 Volume 挂载到容器里的某个路径下，所以需要在里面用“**mountPath**”“**name**”明确地指定挂载路径和 Volume 的名字。
+
+因为这种形式上的差异，以 Volume 的方式来使用 ConfigMap/Secret，就和环境变量不太一样。环境变量用法简单，更适合存放简短的字符串，而 Volume 更适合存放大数据量的配置文件，在 Pod 里加载成文件后让应用直接读取使用。
+
+### 36. 快速暴露 Kubernetes 服务
+
+因为 Pod 都是运行在 Kubernetes 内部的私有网段里的，外界无法直接访问，想要对外暴露服务，需要使用一个专门的 `kubectl port-forward` 命令，它专门负责把本机的端口映射到在目标对象的端口号，有点类似 Docker 的参数 `-p`，经常用于 Kubernetes 的临时调试和测试。
+
+下面我就把本地的“8080”映射到 WordPress Pod 的“80”，kubectl 会把这个端口的所有数据都转发给集群内部的 Pod：
+
+```sh
+kubectl port-forward wp-pod 8080:80 &
+```
+
+注意在命令的末尾使用了一个 `&` 符号，让端口转发工作在后台进行，这样就不会阻碍我们后续的操作。
+
+如果想关闭端口转发，需要敲命令 `fg` ，它会把后台的任务带回到前台，然后就可以简单地用“Ctrl + C”来停止转发了。
+
