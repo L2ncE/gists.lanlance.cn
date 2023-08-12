@@ -624,3 +624,255 @@ kubectl port-forward wp-pod 8080:80 &
 
 如果想关闭端口转发，需要敲命令 `fg` ，它会把后台的任务带回到前台，然后就可以简单地用“Ctrl + C”来停止转发了。
 
+### 37. Deployment
+
+Pod 只能管理容器，不能管理自身，所以就出现了 Deployment，由它来管理 Pod。用来管理 Pod，实现在线业务应用的新 API 对象，就是 Deployment。
+#### 如何使用 YAML 描述 Deployment
+
+```yml
+# kubectl apply -f deploy.yml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ngx-dep
+  labels:
+    app: ngx-dep
+
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ngx-dep
+
+  template:
+    metadata:
+      labels:
+        app: ngx-dep
+    spec:
+      containers:
+      - image: nginx:alpine
+        name: nginx
+        ports:
+        - containerPort: 80
+```
+
+Kubernetes 采用的是这种“贴标签”的方式，通过在 API 对象的“metadata”元信息里加各种标签（labels），我们就可以使用类似关系数据库里查询语句的方式，筛选出具有特定标识的那些对象。**通过标签这种设计，Kubernetes 就解除了 Deployment 和模板里 Pod 的强绑定，把组合关系变成了“弱引用”**。
+### 38. Kubernetes 应用伸缩
+
+`kubectl scale` 是专门用于实现“扩容”和“缩容”的命令，你只要用参数 `--replicas` 指定需要的副本数量，Kubernetes 就会自动增加或者删除 Pod，让最终的 Pod 数量达到“期望状态”。
+
+```sh
+kubectl scale --replicas=5 deploy ngx-dep
+```
+
+### 39. Kubernetes labels
+
+我们通过 `labels` 为对象“贴”了各种“标签”，在使用 `kubectl get` 命令的时候，加上参数 `-l`，使用 `==`、`!=`、`in`、`notin` 的表达式，就能够很容易地用“标签”筛选、过滤出所要查找的对象（有点类似社交媒体的 `#tag` 功能），效果和 Deployment 里的 `selector` 字段是一样的。
+
+```sh
+kubectl get pod -l app=nginx
+```
+
+### 40. DaemonSet
+
+Deployment 并不关心这些 Pod 会在集群的哪些节点上运行，**在它看来，Pod 的运行环境与功能是无关的，只要 Pod 的数量足够，应用程序应该会正常工作**。
+
+这个假设对于大多数业务来说是没问题的，比如 Nginx、WordPress、MySQL，它们不需要知道集群、节点的细节信息，只要配置好环境变量和存储卷，在哪里“跑”都是一样的。
+
+但是有一些业务比较特殊，它们不是完全独立于系统运行的，而是与主机存在“绑定”关系，必须要依附于节点才能产生价值，比如说：
+
+- 网络应用（如 kube-proxy），必须每个节点都运行一个 Pod，否则节点就无法加入 Kubernetes 网络。
+- 监控应用（如 Prometheus），必须每个节点都有一个 Pod 用来监控节点的状态，实时上报信息。
+- 日志应用（如 Fluentd），必须在每个节点上运行一个 Pod，才能够搜集容器运行时产生的日志数据。
+- 安全应用，同样的，每个节点都要有一个 Pod 来执行安全审计、入侵检查、漏洞扫描等工作。
+
+这些业务如果用 Deployment 来部署就不太合适了，因为 Deployment 所管理的 Pod 数量是固定的，而且可能会在集群里“漂移”，但，实际的需求却是要在集群里的每个节点上都运行 Pod，也就是说 Pod 的数量与节点数量保持同步。
+
+所以，Kubernetes 就定义了新的 API 对象 DaemonSet，它在形式上和 Deployment 类似，都是管理控制 Pod，但管理调度策略却不同。DaemonSet 的目标是在集群的每个节点上运行且仅运行一个 Pod，就好像是为节点配上一只“看门狗”，忠实地“守护”着节点，这就是 DaemonSet 名字的由来。
+
+#### 如何使用 YAML 描述 DaemonSet
+
+```yml
+# kubectl apply -f ds.yml
+
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: redis-ds
+  labels:
+    app: redis-ds
+
+spec:
+  selector:
+    matchLabels:
+      name: redis-ds
+
+  template:
+    metadata:
+      labels:
+        name: redis-ds
+
+    spec:
+      containers:
+      - name: redis5
+        image: redis:5-alpine
+        ports:
+        - containerPort: 6379
+
+      tolerations:
+      # this toleration is to have the daemonset runnable on master nodes
+      # remove it if your masters can't run pods
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+        operator: Exists
+```
+
+### 41. 什么是污点和容忍度
+
+Master 节点默认有一个 `taint`，名字是 `node-role.kubernetes.io/master`，它的效果是 `NoSchedule`，也就是说这个污点会拒绝 Pod 调度到本节点上运行，而 Worker 节点的 `taint` 字段则是空的。
+
+`tolerations` 是一个数组，里面可以列出多个被“容忍”的“污点”，需要写清楚“污点”的名字、效果。比较特别是要用 `operator` 字段指定如何匹配“污点”，一般我们都使用 `Exists`，也就是说存在这个名字和效果的“污点”。
+
+如果我们想让 DaemonSet 里的 Pod 能够在 Master 节点上运行，就要写出这样的一个 `tolerations`，容忍节点的 `node-role.kubernetes.io/master:NoSchedule` 这个污点：
+
+```yaml
+tolerations:
+- key: node-role.kubernetes.io/master
+  effect: NoSchedule
+  operator: Exists
+```
+
+“容忍度”并不是 DaemonSet 独有的概念，而是从属于 Pod，你可以在 Job/CronJob、Deployment 里为它们管理的 Pod 也加上 `tolerations`，从而能够更灵活地调度应用。
+
+### 42. 什么是静态 Pod
+
+DaemonSet 是在 Kubernetes 里运行节点专属 Pod 最常用的方式，但它不是唯一的方式，Kubernetes 还支持另外一种叫“**静态 Pod**”的应用部署手段。
+
+“静态 Pod”非常特殊，它不受 Kubernetes 系统的管控，不与 ApiServer、scheduler 发生关系，所以是“静态”的。
+
+但既然它是 Pod，也必然会“跑”在容器运行时上，也会有 YAML 文件来描述它，而唯一能够管理它的 Kubernetes 组件也就只有在每个节点上运行的 kubelet 了。
+
+“静态 Pod”的 YAML 文件默认都存放在节点的 `/etc/kubernetes/manifests` 目录下，它是 Kubernetes 的专用目录。
+
+Kubernetes 的 4 个核心组件 apiserver、etcd、scheduler、controller-manager 原来都以静态 Pod 的形式存在的，这也是为什么它们能够先于 Kubernetes 集群启动的原因。
+
+### 43. Service
+
+Service 使用了 iptables 技术，每个节点上的 kube-proxy 组件自动维护 iptables 规则，客户不再关心 Pod 的具体地址，只要访问 Service 的固定 IP 地址，Service 就会根据 iptables 规则转发请求给它管理的多个 Pod，是典型的负载均衡架构。
+
+不过 Service 并不是只能使用 iptables 来实现负载均衡，它还有另外两种实现技术：性能更差的 userspace 和性能更好的 ipvs。
+#### 如何使用 YAML 描述 Service
+
+```yml
+# kubectl apply -f svc.yml
+# kubectl describe svc ngx-svc
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: ngx-svc
+
+spec:
+  selector:
+    app: ngx-dep
+
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+
+  #type: ClusterIP
+  type: NodePort
+```
+
+`selector` 和 Deployment/DaemonSet 里的作用是一样的，用来过滤出要代理的那些 Pod。因为我们指定要代理 Deployment，所以 Kubernetes 就为我们自动填上了 ngx-dep 的标签，会选择这个 Deployment 对象部署的所有 Pod。
+
+Service 对象有一个关键字段“**type**”，表示 Service 是哪种类型的负载均衡。前面我们看到的用法都是对集群内部 Pod 的负载均衡，所以这个字段的值就是默认的“**ClusterIP**”，Service 的静态 IP 地址只能在集群内访问。
+
+除了“ClusterIP”，Service 还支持其他三种类型，分别是“**ExternalName**”“**LoadBalancer**”“**NodePort**”。不过前两种类型一般由云服务商提供。
+
+如果我们在使用命令 `kubectl expose` 的时候加上参数 `--type=NodePort`，或者在 YAML 里添加字段 `type:NodePort`，那么 Service 除了会对后端的 Pod 做负载均衡之外，还会在集群里的每个节点上创建一个独立的端口，用这个端口对外提供服务，这也正是“NodePort”这个名字的由来。
+
+#### 如何以域名的方式使用 Service
+
+Service 对象的 IP 地址是静态的，保持稳定，这在微服务里确实很重要，不过数字形式的 IP 地址用起来还是不太方便。这个时候 Kubernetes 的 DNS 插件就派上了用处，它可以为 Service 创建易写易记的域名，让 Service 更容易使用。
+
+namespace 的简写是“**ns**”，你可以使用命令 `kubectl get ns` 来查看当前集群里都有哪些名字空间，也就是说 API 对象有哪些分组。
+
+Service 对象的域名完全形式是“**对象.名字空间.svc.cluster.local**”，但很多时候也可以省略后面的部分，直接写“**对象.名字空间**”甚至“**对象名**”就足够了，默认会使用对象所在的名字空间。
+
+Kubernetes 也为每个 Pod 分配了域名，形式是“**IP 地址.名字空间.pod.cluster.local**”，但需要把 IP 地址里的 `.` 改成 `-` 。比如地址 `10.10.1.87`，它对应的域名就是 `10-10-1-87.default.pod`。
+
+#### 缺点
+
+1. 端口数量很有限。Kubernetes 为了避免端口冲突，默认只在“30000~32767”这个范围内随机分配，只有 2000 多个，而且都不是标准端口号，这对于具有大量业务应用的系统来说根本不够用。
+2. 它会在每个节点上都开端口，然后使用 kube-proxy 路由到真正的后端 Service，这对于有很多计算节点的大集群来说就带来了一些网络通信成本，不是特别经济。
+3. 它要求向外界暴露节点的 IP 地址，这在很多时候是不可行的，为了安全还需要在集群外再搭一个反向代理，增加了方案的复杂度。
+
+### 44. Ingress
+
+Ingress 可以说是在七层上另一种形式的 Service，它同样会代理一些后端的 Pod，也有一些路由规则来定义流量应该如何分配、转发，只不过这些规则都使用的是 HTTP/HTTPS 协议。
+#### Ingress Controller
+
+Service 本身是没有服务能力的，它只是一些 iptables 规则，**真正配置、应用这些规则的实际上是节点里的 kube-proxy 组件**。如果没有 kube-proxy，Service 定义得再完善也没有用。
+
+同样的，Ingress 也只是一些 HTTP 路由规则的集合，相当于一份静态的描述文件，真正要把这些规则在集群里实施运行，还需要有另外一个东西，这就是 `Ingress Controller`，它的作用就相当于 Service 的 kube-proxy，能够读取、应用 Ingress 规则，处理、调度流量。
+#### Ingress Class
+
+- 由于某些原因，项目组需要引入不同的 Ingress Controller，但 Kubernetes 不允许这样做；
+- Ingress 规则太多，都交给一个 Ingress Controller 处理会让它不堪重负；
+- 多个 Ingress 对象没有很好的逻辑分组方式，管理和维护成本很高；
+- 集群里有不同的租户，他们对 Ingress 的需求差异很大甚至有冲突，无法部署在同一个 Ingress Controller 上。
+
+所以，Kubernetes 就又提出了一个 `Ingress Class` 的概念，让它插在 Ingress 和 Ingress Controller 中间，作为流量规则和控制器的协调人，解除了 Ingress 和 Ingress Controller 的强绑定关系。
+#### 如何使用 YAML 描述 Ingress/Ingress Class
+
+```yml
+# kubectl create ing ngx-ing --rule="ngx.test/=ngx-svc:80" $out
+# kubectl create ing ngx-ing --rule="ngx.test/=ngx-svc:80" --class=ngx-ink $out
+
+# curl 127.1/nginx-health
+# curl 127.1:8081/nginx-ready
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: IngressClass
+metadata:
+  name: ngx-ink
+
+spec:
+  controller: nginx.org/ingress-controller
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ngx-ing
+
+  # customize the behaviors of nginx
+  annotations:
+    nginx.org/lb-method: round_robin
+
+spec:
+  ingressClassName: ngx-ink
+
+  rules:
+  - host: ngx.test
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: ngx-svc
+            port:
+              number: 80
+```
+
+
+
+
+
