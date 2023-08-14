@@ -872,7 +872,525 @@ spec:
               number: 80
 ```
 
+### 45. PersistentVolume
 
+**作为存储的抽象，PV 实际上就是一些存储设备、文件系统**，比如 Ceph、GlusterFS、NFS，甚至是本地磁盘，管理它们已经超出了 Kubernetes 的能力范围，所以，一般会由系统管理员单独维护，然后再在 Kubernetes 里创建对应的 PV。要注意的是，PV 属于集群的系统资源，是和 Node 平级的一种对象，Pod 对它没有管理权，只有使用权。
 
+这么多种存储设备，只用一个 PV 对象来管理还是有点太勉强了，不符合“单一职责”的原则，让 Pod 直接去选择 PV 也很不灵活。于是 Kubernetes 就又增加了两个新对象，**PersistentVolumeClaim**和**StorageClass**，用的还是“中间层”的思想，把存储卷的分配管理过程再次细化。
 
+PersistentVolumeClaim，简称 PVC，从名字上看比较好理解，就是用来向 Kubernetes 申请存储资源的。PVC 是给 Pod 使用的对象，它相当于是 Pod 的代理，代表 Pod 向系统申请 PV。一旦资源申请成功，Kubernetes 就会把 PV 和 PVC 关联在一起，这个动作叫做“**绑定**”（bind）。
+
+但是，系统里的存储资源非常多，如果要 PVC 去直接遍历查找合适的 PV 也很麻烦，所以就要用到 StorageClass。StorageClass 的作用有点像里的 IngressClass，它抽象了特定类型的存储系统（比如 Ceph、NFS），在 PVC 和 PV 之间充当“协调人”的角色，帮助 PVC 找到合适的 PV。也就是说它可以简化 Pod 挂载“虚拟盘”的过程，让 Pod 看不到 PV 的实现细节。
+
+#### 使用 YAML 描述 PersistentVolume/PersistentVolumeClaim
+
+```yml
+# kubectl get pv
+# kubectl get pvc
+
+# kubectl exec -it host-pvc-pod -- sh
+# echo aaa > /tmp/a.txt
+#
+# check node's /tmp/host-10m-pv
+
+---
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: host-10m-pv
+
+spec:
+  storageClassName: host-test
+
+  accessModes:
+  - ReadWriteOnce
+  capacity:
+    storage: 10Mi
+
+  # mkdir -p /tmp/host-10m-pv/
+  hostPath:
+    path: /tmp/host-10m-pv/
+
+---
+
+# pvc
+# try to find the most suitable pv
+# capacity/accessModes
+apiVersion: v1
+kind: PersistentVolumeClaim
+
+metadata:
+  name: host-5m-pvc
+
+spec:
+
+  storageClassName: host-test
+
+  accessModes:
+    - ReadWriteOnce
+
+  resources:
+    requests:
+      storage: 5Mi
+
+---
+
+# pod
+apiVersion: v1
+kind: Pod
+metadata:
+  name: host-pvc-pod
+
+spec:
+
+  volumes:
+  - name: host-pvc-vol
+    persistentVolumeClaim:
+      claimName: host-5m-pvc
+
+  containers:
+    - name: ngx-pvc-pod
+      image: nginx:alpine
+      ports:
+      - containerPort: 80
+      volumeMounts:
+      - name: host-pvc-vol
+        mountPath: /tmp
+
+---
+
+```
+
+PVC 的内容与 PV 很像，但它不表示实际的存储，而是一个“申请”或者“声明”，spec 里的字段描述的是对存储的“期望状态”。
+
+所以 PVC 里的 `storageClassName`、`accessModes` 和 PV 是一样的，**但不会有字段 `capacity`，而是要用 `resources.request` 表示希望要有多大的容量**。
+
+### 46. 动态存储卷
+
+Kubernetes 里有“**动态存储卷**”的概念，它可以用 StorageClass 绑定一个 Provisioner 对象，而这个 Provisioner 就是一个能够自动管理存储、创建 PV 的应用，代替了原来系统管理员的手工劳动。
+
+### 47. StatefulSet
+
+对于“有状态应用”，多个实例之间可能存在依赖关系，比如 master/slave、active/passive，需要依次启动才能保证应用正常运行，外界的客户端也可能要使用固定的网络标识来访问实例，而且这些信息还必须要保证在 Pod 重启后不变。
+
+所以，Kubernetes 就在 Deployment 的基础之上定义了一个新的 API 对象，名字也很好理解，就叫 StatefulSet，专门用来管理有状态的应用。
+
+#### 如何使用 YAML 描述 StatefulSet
+
+```yml
+---
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis-sts
+
+spec:
+  # headless svc
+  serviceName: redis-svc
+
+  replicas: 2
+  selector:
+    matchLabels:
+      app: redis-sts
+
+  template:
+    metadata:
+      labels:
+        app: redis-sts
+    spec:
+      containers:
+      - image: redis:5-alpine
+        name: redis
+        ports:
+        - containerPort: 6379
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-svc
+
+spec:
+  selector:
+    app: redis-sts
+
+  # headless
+  clusterIP: None
+
+  ports:
+  - port: 6379
+    protocol: TCP
+    targetPort: 6379
+
+---
+
+```
+
+Service 发现这些 Pod 不是一般的应用，而是有状态应用，需要有稳定的网络标识，所以就会为 Pod 再多创建出一个新的域名，格式是“**Pod 名.服务名.名字空间.svc.cluster.local**”。当然，这个域名也可以简写成“**Pod 名.服务名**”。
+
+显然，在 StatefulSet 里的这两个 Pod 都有了各自的域名，也就是稳定的网络标识。那么接下来，外部的客户端只要知道了 StatefulSet 对象，就可以用固定的编号去访问某个具体的实例了，虽然 Pod 的 IP 地址可能会变，但这个有编号的域名由 Service 对象维护，是稳定不变的。
+
+Service 原本的目的是负载均衡，应该由它在 Pod 前面来转发流量，但是对 StatefulSet 来说，这项功能反而是不必要的，因为 Pod 已经有了稳定的域名，外界访问服务就不应该再通过 Service 这一层了。所以，从安全和节约系统资源的角度考虑，**我们可以在 Service 里添加一个字段 `clusterIP: None` ，告诉 Kubernetes 不必再为这个对象分配 IP 地址**。
+
+### 48. 如何实现 StatefulSet 的数据持久化
+
+为了强调持久化存储与 StatefulSet 的一对一绑定关系，Kubernetes 为 StatefulSet 专门定义了一个字段“**volumeClaimTemplates**”，直接把 PVC 定义嵌入 StatefulSet 的 YAML 文件里。这样能保证创建 StatefulSet 的同时，就会为每个 Pod 自动创建 PVC，让 StatefulSet 的可用性更高。
+
+```yml
+---
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis-pv-sts
+
+spec:
+  # headless svc
+  serviceName: redis-pv-svc
+
+  # pvc
+  volumeClaimTemplates:
+  - metadata:
+      name: redis-100m-pvc
+    spec:
+      storageClassName: nfs-client
+      accessModes:
+        - ReadWriteMany
+      resources:
+        requests:
+          storage: 100Mi
+
+  replicas: 2
+  selector:
+    matchLabels:
+      app: redis-pv-sts
+
+  template:
+    metadata:
+      labels:
+        app: redis-pv-sts
+    spec:
+      containers:
+      - image: redis:5-alpine
+        name: redis
+        ports:
+        - containerPort: 6379
+
+        volumeMounts:
+        - name: redis-100m-pvc
+          mountPath: /data
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-pv-svc
+
+spec:
+  selector:
+    app: redis-pv-sts
+
+  # headless
+  clusterIP: None
+
+  ports:
+  - port: 6379
+    protocol: TCP
+    targetPort: 6379
+
+---
+```
+
+### 49. Kubernetes 滚动更新
+
+#### Kubernetes 如何定义应用版本
+
+**在 Kubernetes 里应用的版本变化就是 `template` 里 Pod 的变化**，哪怕 `template` 里只变动了一个字段，那也会形成一个新的版本，也算是版本变化。
+
+但 `template` 里的内容太多了，拿这么长的字符串来当做“版本号”不太现实，所以 Kubernetes 就使用了“摘要”功能，用摘要算法计算 `template` 的 Hash 值作为“版本号”，虽然不太方便识别，但是很实用。
+#### Kubernetes 如何实现应用更新
+
+执行命令 `kubectl apply` 来更新应用，因为改动了镜像名，Pod 模板变了，就会触发“版本更新”，然后用一个新命令：`kubectl rollout status`，来查看应用更新的状态。
+
+“滚动更新”就是由 Deployment 控制的两个同步进行的“应用伸缩”操作，老版本缩容到 0，同时新版本扩容到指定值，是一个“此消彼长”的过程。
+#### Kubernetes 如何管理应用更新
+
+Kubernetes 的“滚动更新”功能确实非常方便，不需要任何人工干预就能简单地把应用升级到新版本，也不会中断服务，不过如果更新过程中发生了错误或者更新后发现有 Bug 该怎么办呢？
+
+要解决这两个问题，我们还是要用 `kubectl rollout` 命令。
+
+在应用更新的过程中，你可以随时使用 `kubectl rollout pause` 来暂停更新，检查、修改 Pod，或者测试验证，如果确认没问题，再用 `kubectl rollout resume` 来继续更新。
+
+对于更新后出现的问题，Kubernetes 为我们提供了“后悔药”，也就是更新历史，你可以查看之前的每次更新记录，并且回退到任何位置，和我们开发常用的 Git 等版本控制软件非常类似。
+
+查看更新历史使用的命令是 `kubectl rollout history`。**想要回退到上一个版本，就可以使用命令 `kubectl rollout undo`，也可以加上参数 `--to-revision` 回退到任意一个历史版本**。
+#### Kubernetes 如何添加更新描述
+
+**只需要在 Deployment 的 `metadata` 里加上一个新的字段 `annotations`**。`annotations` 字段的含义是“注解”“注释”，形式上和 `labels` 一样，都是 Key-Value，也都是给 API 对象附加一些额外的信息，但是用途上区别很大。
+
+- `annotations` 添加的信息一般是给 Kubernetes 内部的各种对象使用的，有点像是“扩展属性”；
+- `labels` 主要面对的是 Kubernetes 外部的用户，用来筛选、过滤对象的。
+
+### 50. 容器资源配额
+
+**只要在 Pod 容器的描述部分添加一个新字段 `resources` 就可以了**，它就相当于申请资源的 `Claim`。
+
+```yml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ngx-pod-resources
+
+spec:
+  containers:
+  - image: nginx:alpine
+    name: ngx
+    ports:
+    - containerPort: 80
+
+    resources:
+      requests:
+        cpu: 10m
+        memory: 100Mi
+      limits:
+        cpu: 20m
+        memory: 200Mi
+```
+
+- “**requests**”，意思是容器要申请的资源，也就是说要求 Kubernetes 在创建 Pod 的时候必须分配这里列出的资源，否则容器就无法运行。
+- “**limits**”，意思是容器使用资源的上限，不能超过设定值，否则就有可能被强制停止运行。
+
+### 52. 容器状态探针
+
+Kubernetes 为检查应用状态定义了三种探针，它们分别对应容器不同的状态：
+
+- **Startup**，启动探针，用来检查应用是否已经启动成功，适合那些有大量初始化工作要做，启动很慢的应用。
+- **Liveness**，存活探针，用来检查应用是否正常运行，是否存在死锁、死循环。
+- **Readiness**，就绪探针，用来检查应用是否可以接收流量，是否能够对外提供服务。
+
+如果一个 Pod 里的容器配置了探针，**Kubernetes 在启动容器后就会不断地调用探针来检查容器的状态**：
+
+- 如果 Startup 探针失败，Kubernetes 会认为容器没有正常启动，就会尝试反复重启，当然其后面的 Liveness 探针和 Readiness 探针也不会启动。
+- 如果 Liveness 探针失败，Kubernetes 就会认为容器发生了异常，也会重启容器。
+- 如果 Readiness 探针失败，Kubernetes 会认为容器虽然在运行，但内部有错误，不能正常提供服务，就会把容器从 Service 对象的负载均衡集合中排除，不会给它分配流量。
+
+```yml
+# kubectl explain pod.spec.containers.startupProbe
+# kubectl explain pod.spec.containers.livenessProbe
+# kubectl explain pod.spec.containers.readinessProbe
+#
+# kubectl logs ngx-pod-probe -f
+
+---
+
+# this cm will be mounted to /etc/nginx/conf.d
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ngx-conf
+
+data:
+  default.conf: |
+    server {
+      listen 80;
+      location = /ready {
+        return 200 'I am ready';
+        #return 500 'I am not ready';
+      }
+      location / {
+        default_type text/plain;
+        return 200 "Nginx OK";
+      }
+    }
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ngx-pod-probe
+
+spec:
+  volumes:
+  - name: ngx-conf-vol
+    configMap:
+      name: ngx-conf
+
+  containers:
+  - image: nginx:alpine
+    name: ngx
+    ports:
+    - containerPort: 80
+
+    volumeMounts:
+    - mountPath: /etc/nginx/conf.d
+      name: ngx-conf-vol
+
+    # probes are here
+
+    startupProbe:
+      periodSeconds: 1
+      timeoutSeconds: 1
+      exec:
+        command: ["cat", "/var/run/nginx.pid"]
+        #command: ["cat", "nginx.pid"]  # wrong pid file
+
+    livenessProbe:
+      periodSeconds: 10
+      timeoutSeconds: 1
+      #failureThreshold: 1
+      tcpSocket:
+        #port: 80
+        port: 8080
+
+    readinessProbe:
+      periodSeconds: 5
+      timeoutSeconds: 1
+      httpGet:
+        path: /ready
+        port: 80
+
+---
+
+```
+
+### 53. Kubernetes 集群管理
+
+当多团队、多项目共用 Kubernetes 的时候，为了避免这些问题的出现，我们就需要**把集群给适当地“局部化”，为每一类用户创建出只属于它自己的“工作空间”**。
+
+**想要把一个对象放入特定的名字空间，需要在它的 `metadata` 里添加一个 `namespace` 字段**
+
+```yml
+# kubectl create ns test-ns
+# kubectl run ngx --image=nginx:alpine
+
+---
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: test-ns
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ngx
+  namespace: test-ns
+
+spec:
+  containers:
+  - image: nginx:alpine
+    name: ngx
+
+---
+
+```
+
+`kubectl apply` 创建这个对象之后，我们直接用 `kubectl get` 是看不到它的，因为默认查看的是“default”名字空间，**想要操作其他名字空间的对象必须要用 `-n` 参数明确指定**：
+
+```sh
+kubectl get pod -n test-ns
+```
+
+因为名字空间里的对象都从属于名字空间，所以在删除名字空间的时候一定要小心，一旦名字空间被删除，它里面的所有对象也都会消失。
+
+#### 资源配额
+
+有了名字空间，我们就可以像管理容器一样，给名字空间设定配额，把整个集群的计算资源分割成不同的大小，按需分配给团队或项目使用。
+
+**名字空间的资源配额需要使用一个专门的 API 对象，叫做 `ResourceQuota`**，因为资源配额对象必须依附在某个名字空间上，所以在它的 `metadata` 字段里必须明确写出 `namespace`（否则就会应用到 default 名字空间）。
+
+```yml
+# kubectl create ns dev-ns $out
+# kubectl create quota dev-qt $out
+#
+# kubectl explain quota.spec
+# kubectl describe -n dev-ns quota dev-qt
+#
+# kubectl explain limits.spec.limits
+#
+# kubectl run ngx --image=nginx:alpine -n dev-ns
+# kubectl describe pod ngx -n dev-ns
+
+---
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dev-ns
+
+---
+
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: dev-qt
+  namespace: dev-ns
+
+spec:
+  hard:
+    requests.cpu: 10
+    requests.memory: 10Gi
+    limits.cpu: 10
+    limits.memory: 20Gi
+
+    requests.storage: 100Gi
+    persistentvolumeclaims: 100
+
+    pods: 100
+    configmaps: 100
+    secrets: 100
+    services: 10
+    services.nodeports: 5
+
+    count/jobs.batch: 1
+    count/cronjobs.batch: 1
+    count/deployments.apps: 1
+
+---
+
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: dev-limits
+  namespace: dev-ns
+
+spec:
+  limits:
+  - type: Container
+    defaultRequest:
+      cpu: 200m
+      memory: 50Mi
+    default:
+      cpu: 500m
+      memory: 100Mi
+  - type: Pod
+    max:
+      cpu: 800m
+      memory: 200Mi
+
+---
+
+```
+
+它需要在 `spec` 里使用 `hard` 字段，意思就是“**硬性全局限制**”。
+
+- CPU 和内存配额，使用 `request.*`、`limits.*`，这是和容器资源限制是一样的。
+- 存储容量配额，使 `requests.storage` 限制的是 PVC 的存储总量，也可以用 `persistentvolumeclaims` 限制 PVC 的个数。
+- 核心对象配额，使用对象的名字（英语复数形式），比如 `pods`、`configmaps`、`secrets`、`services`。
+- 其他 API 对象配额，使用 `count/name.group` 的形式，比如 `count/jobs.batch`、`count/deployments.apps`。
+
+在名字空间加上了资源配额限制之后，它会有一个合理但比较“烦人”的约束：要求所有在里面运行的 Pod 都必须用字段 `resources` 声明资源需求，否则就无法创建。这个时候就要用到一个**很小但很有用的辅助对象了—— `LimitRange`，简称是 `limits`，它能为 API 对象添加默认的资源配额限制**。
+
+- `spec.limits` 是它的核心属性，描述了默认的资源限制。
+- `type` 是要限制的对象类型，可以是 `Container`、`Pod`、`PersistentVolumeClaim`。
+- `default` 是默认的资源上限，对应容器里的 `resources.limits`，只适用于 `Container`。
+- `defaultRequest` 默认申请的资源，对应容器里的 `resources.requests`，同样也只适用于 `Container`。
+- `max`、`min` 是对象能使用的资源的最大最小值。
 
