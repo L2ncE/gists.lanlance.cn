@@ -1394,3 +1394,100 @@ spec:
 - `defaultRequest` 默认申请的资源，对应容器里的 `resources.requests`，同样也只适用于 `Container`。
 - `max`、`min` 是对象能使用的资源的最大最小值。
 
+### 54. Metrics Server
+
+Metrics Server 是一个专门用来收集 Kubernetes 核心资源指标（metrics）的工具，它定时从所有节点的 kubelet 里采集信息，但是对集群的整体性能影响极小，每个节点只大约会占用 1m 的 CPU 和 2MB 的内存，所以性价比非常高。
+#### HorizontalPodAutoscaler
+
+它是专门用来自动伸缩 Pod 数量的对象，适用于 Deployment 和 StatefulSet，但不能用于 DaemonSet。HorizontalPodAutoscaler 的能力完全基于 Metrics Server，它从 Metrics Server 获取当前应用的运行指标，主要是 CPU 使用率，再依据预定的策略增加或者减少 Pod 的数量。
+
+```yml
+# kubectl autoscale deploy ngx-hpa-dep --min=1 --max=10 --cpu-percent=5 $out
+# kubectl apply -f hpa.yml
+#
+# wait some minutes for hpa monitor
+#
+# kubectl exec -it test -- sh
+# curl ngx-hpa-svc
+# ab -c 10 -t 60 -n 1000000 'http://ngx-hpa-svc/'
+#
+# kubectl run -it test --image=httpd:alpine -- sh
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ngx-hpa-dep
+
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ngx-hpa-dep
+
+  template:
+    metadata:
+      labels:
+        app: ngx-hpa-dep
+    spec:
+      containers:
+      - image: nginx:alpine
+        name: nginx
+        ports:
+        - containerPort: 80
+
+        resources:
+          requests:
+            cpu: 50m
+            memory: 10Mi
+          limits:
+            cpu: 100m
+            memory: 20Mi
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: ngx-hpa-svc
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: ngx-hpa-dep
+
+---
+
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: ngx-hpa
+
+spec:
+  maxReplicas: 10
+  minReplicas: 2
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ngx-hpa-dep
+  targetCPUUtilizationPercentage: 5
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test
+spec:
+  containers:
+  - image: httpd:alpine
+    name: test
+
+---
+
+```
+
+**注意在它的** `spec` **里一定要用 `resources` 字段写清楚资源配额**，否则 HorizontalPodAutoscaler 会无法获取 Pod 的指标，也就无法实现自动化扩缩容。
