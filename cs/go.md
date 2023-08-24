@@ -693,7 +693,7 @@ func (o *Once) doSlow(f func()) {
 
 如果要使用 struct 作为 key，我们要保证 struct 对象在逻辑上是不可变的，这样才会保证 map 的逻辑没有问题。
 
-### 84， 使用 Map 的常见错误
+### 84. 使用 Map 的常见错误
 
 - 未初始化
 - 并发读写
