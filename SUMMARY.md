@@ -15,7 +15,7 @@
 - [MongoDB](cs/mongo.md)
 - [对象存储](cs/objs.md)
 - [消息队列](cs/mq.md)
-- [分布式系统与高并发](cs/distributed.md)
+- [分布式系统](cs/distributed.md)
 - [云原生与 DevOps](cs/devops.md)
 - [安全](cs/sc.md)
 - [数据结构与算法](cs/al.md)
