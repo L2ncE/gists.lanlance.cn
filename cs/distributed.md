@@ -16,7 +16,7 @@
 
 CAP 不可能都取，只能取其中 2 个
 
-### 3. 分布式系统协议 Raft
+### 3. Etcd 与 Raft
 
 [从 Raft 原理到实践](https://mp.weixin.qq.com/s?__biz=Mzg3OTU5NzQ1Mw==&mid=2247485759&idx=1&sn=41957e94a2c69426befafd373fbddcc5&chksm=cf034bddf874c2cb52a7aafea5cd194e70308c7d4ad74183db8a36d3747122be1c7a31b84ee3&token=179167416&lang=zh_CN#rd)
 

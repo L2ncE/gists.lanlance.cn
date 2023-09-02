@@ -6,7 +6,7 @@
 
 ### 2. MinIO 基础概念
 
-- Object：存储到 Minio 的基本对象，如文件、字节流，Anything…
+- Object：存储到 MinIO 的基本对象，如文件、字节流，Anything…
 
 - Bucket：用来存储 Object 的逻辑空间。每个 Bucket 之间的数据是相互隔离的。对于客户端而言，就相当于一个存放文件的顶层文件夹。
 
