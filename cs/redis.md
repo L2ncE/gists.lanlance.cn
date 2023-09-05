@@ -150,7 +150,7 @@ RDB 快照就是记录某一个瞬间的内存数据，记录的是实际数据
 
 ### 19. Redis 使用的过期删除策略是什么？
 
-Redis 使用的过期删除策略是「惰性删除+定期删除」这两种策略配和使用。
+Redis 使用的过期删除策略是「惰性删除 + 定期删除」这两种策略配和使用。
 
 ### 20. 什么是惰性删除策略？
 
@@ -588,7 +588,7 @@ Redis 主从节点发送的心态间隔是不一样的，而且作用也有一�
 
 Redis 主节点每次收到写命令之后，先写到内部的缓冲区，然后异步发送给从节点。
 
-### 56. 主从复制中两个 Buffer(replication buffer 、repl backlog buffer)有什么区别？
+### 56. 主从复制中两个 Buffer(replication buffer 、repl backlog buffer) 有什么区别？
 
 replication buffer 、repl backlog buffer 区别如下：
 
@@ -689,10 +689,18 @@ Redis 在 2.8 版本以后提供的哨兵（Sentinel）机制，它的作用是�
 
 ### 64. Redis 使用的协议
 
-Redis 底层使用的通信协议是 RESP（Redis Serialization Protocol 的缩写），RESP 协议可以序列化多种类型，比如 Simple Strings(简单字符串），Errors（错误类型），Integers（整形），Bulk Strings（批量串）和 Arrays（数组），但此协议只适用于 Redis 客户端-服务端 之间的通信， Redis 集群中节点间通信使用的是 Gossip 协议。
+Redis 底层使用的通信协议是 RESP（Redis Serialization Protocol 的缩写），RESP 协议可以序列化多种类型，比如 Simple Strings(简单字符串），Errors（错误类型），Integers（整形），Bulk Strings（批量串）和 Arrays（数组），但此协议只适用于 Redis 客户端 - 服务端 之间的通信， Redis 集群中节点间通信使用的是 Gossip 协议。
 
 ### 65. 大量服务向 Redis 拿缓存的解决办法
 
 如果服务大量向 Redis 拿缓存，可能会遇到缓存击穿的问题。缓存击穿是指一个不存在于缓存中的数据，每次请求都会直接访问数据库，导致数据库压力过大，甚至宕机。解决这个问题的方法有很多，其中一种是使用互斥锁（mutex）。当一个请求发现缓存中没有数据时，它会尝试获取一个互斥锁。如果获取成功，就从数据库中获取数据并写入缓存；否则，就等待一段时间后重试。这样可以避免大量请求同时访问数据库。
 
 另外，还可以使用 Redis 的一些高级特性来解决这个问题。例如，使用 Redis 的 SETNX 命令来实现分布式锁。
+
+### 66. RDB 的 save 操作 fork 了一个 redis 子进程，那么这个时候内存会变为两倍吗？为什么？
+
+在子进程执行 RDB 保存操作期间，它会复制父进程的内存数据。这意味着在保存操作期间，Redis 的内存会变为两倍。原因是在保存操作期间，子进程需要拷贝父进程的内存数据，这样确保了保存操作的原子性和一致性。因此，在保存操作完成之前，Redis 的内存会占用两倍的空间。
+
+### 67. Redis 集群有多少个槽
+
+Redis 集群默认情况下有 16384 个槽。这是因为 Redis 使用哈希槽（hash slots）来分片数据，并将数据分布在多个节点上。每个槽可以保存一个键值对，因此 Redis 集群最多可以保存 16384 个键值对。
