@@ -1376,3 +1376,32 @@ func main() {
 对于我们想要复用的对象，我们只需要为其实现 Recycle() 方法，在程序确定对象不再需要被使用时，调用 .Recycle() ，便可将其重置并释放，留给程序下一次需要对象时使用。
 
 需要注意的是，对象能够被复用的前提是我们能够精确控制对象的使用生命周期，如果我们提前释放了一个正在其他地方被使用的对象，有可能引发不可预料的错误。
+
+### 112. 数组与编译
+
+```go
+arr1 := [3]int{1, 2, 3}
+arr2 := [...]int{1, 2, 3}
+```
+
+上述两种声明方式在运行期间得到的结果是完全相同的，后一种声明方式在编译期间就会被转换成前一种，这也就是编译器对数组大小的推导。
+
+1. 当元素数量小于或者等于 4 个时，会直接将数组中的元素放置在栈上；
+2. 当元素数量大于 4 个时，会将数组中的元素放置到静态区并在运行时取出；
+
+数组访问越界是非常严重的错误，Go 语言中可以在编译期间的静态类型检查判断数组越界，数组和字符串的一些简单越界错误都会在编译期间发现，例如：直接使用整数或者常量访问数组；但是如果使用变量去访问数组或者字符串时，编译器就无法提前发现错误，我们需要 Go 语言运行时阻止不合法的访问：
+
+```go
+arr[4]: invalid array index 4 (out of bounds for 3-element array)
+arr[i]: panic: runtime error: index out of range [4] with length 3
+```
+
+Go 语言运行时在发现数组、切片和字符串的越界操作会由运行时的 [`runtime.panicIndex`](https://draveness.me/golang/tree/runtime.panicIndex) 和 [`runtime.goPanicIndex`](https://draveness.me/golang/tree/runtime.goPanicIndex) 触发程序的运行时错误并导致崩溃退出。
+
+### 113. 切片与编译
+
+从切片的定义我们能推测出，切片在编译期间的生成的类型只会包含切片中的元素类型，即 `int` 或者 `interface{}` 等。
+
+使用 `append` 关键字向切片中追加元素也是常见的切片操作，中间代码生成阶段的 [`cmd/compile/internal/gc.state.append`](https://draveness.me/golang/tree/cmd/compile/internal/gc.state.append) 方法会根据返回值是否会覆盖原变量，选择进入两种流程，最大的区别在于得到的新切片是否会赋值回原变量。如果我们选择覆盖原有的变量，就不需要担心切片发生拷贝影响性能，因为 Go 语言编译器已经对这种常见的情况做出了优化。
+
+
