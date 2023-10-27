@@ -1530,3 +1530,145 @@ hash["5"] = 6
 ##### 删除
 
 如果想要删除哈希中的元素，就需要使用 Go 语言中的 `delete` 关键字，这个关键字的唯一作用就是将某一个键对应的元素从哈希表中删除，无论是该键对应的值是否存在，这个内建的函数都不会返回任何的结果。
+
+### 115. 字符串原理设计
+
+只读只意味着字符串会分配到只读的内存空间，但是 Go 语言只是不支持直接修改 `string` 类型变量的内存空间，我们仍然可以通过在 `string` 和 `[]byte` 类型之间反复转换实现修改这一目的：
+
+1. 先将这段内存拷贝到堆或者栈上；
+2. 将变量的类型转换成 `[]byte` 后并修改字节数据；
+3. 将修改后的字节数组转换回 `string`；
+
+与切片的结构体相比，字符串只少了一个表示容量的 `Cap` 字段，而正是因为切片在 Go 语言的运行时表示与字符串高度相似，所以我们经常会说字符串是一个只读的切片类型。
+
+### 116. 函数调用
+
+Go 通过栈传递函数的参数和返回值，在调用函数之前会在栈上为返回值分配合适的内存空间，随后将入参从右到左按顺序压栈并拷贝参数，返回值会被存储到调用方预留好的栈空间上，我们可以简单总结出以下几条规则：
+
+1. 通过堆栈传递参数，入栈的顺序是从右到左，而参数的计算是从左到右；
+2. 函数返回值通过堆栈传递并由调用者预先分配内存空间；
+3. 调用函数时都是传值，接收方会对入参进行复制再计算；
+#### 参数传递
+
+不同语言会选择不同的方式传递参数，Go 语言选择了传值的方式，**无论是传递基本类型、结构体还是指针，都会对传递的参数进行拷贝**。
+
+### 117. 接口 itab 结构体设计
+
+#### itab 结构体
+
+[`runtime.itab`](https://draveness.me/golang/tree/runtime.itab) 结构体是接口类型的核心组成部分，每一个 [`runtime.itab`](https://draveness.me/golang/tree/runtime.itab) 都占 32 字节，我们可以将其看成接口类型和具体类型的组合，它们分别用 `inter` 和 `_type` 两个字段表示：
+
+```go
+type itab struct { // 32 字节
+	inter *interfacetype
+	_type *_type
+	hash  uint32
+	_     [4]byte
+	fun   [1]uintptr
+}
+```
+
+Go
+
+除了 `inter` 和 `_type` 两个用于表示类型的字段之外，上述结构体中的另外两个字段也有自己的作用：
+
+- `hash` 是对 `_type.hash` 的拷贝，当我们想将 `interface` 类型转换成具体类型时，可以使用该字段快速判断目标类型和具体类型 [`runtime._type`](https://draveness.me/golang/tree/runtime._type) 是否一致；
+- `fun` 是一个动态大小的数组，它是一个用于动态派发的虚函数表，存储了一组函数指针。虽然该变量被声明成大小固定的数组，但是在使用时会通过原始指针获取其中的数据，所以 `fun` 数组中保存的元素数量是不确定的；
+
+### 118. 反射法则
+
+1. 从 `interface{}` 变量可以反射出反射对象；
+2. 从反射对象可以获取 `interface{}` 变量；
+3. 要修改反射对象，其值必须可设置；
+
+```go
+v := reflect.ValueOf(1)
+v.Interface().(int)
+```
+
+从反射对象到接口值的过程是从接口值到反射对象的镜面过程，两个过程都需要经历两次转换：
+
+- 从接口值到反射对象：
+    - 从基本类型到接口类型的类型转换；
+    - 从接口类型到反射对象的转换；
+- 从反射对象到接口值：
+    - 反射对象转换成接口类型；
+    - 通过显式类型转换变成原始类型；
+
+由于 Go 语言的函数调用都是传值的，所以我们得到的反射对象跟最开始的变量没有任何关系，那么直接修改反射对象无法改变原始变量，程序为了防止错误就会崩溃。
+
+想要修改原变量只能使用如下的方法：
+
+```go
+func main() {
+	i := 1
+	v := reflect.ValueOf(&i)
+	v.Elem().SetInt(10)
+	fmt.Println(i)
+}
+
+$ go run reflect.go
+10
+```
+
+1. 调用 [`reflect.ValueOf`](https://draveness.me/golang/tree/reflect.ValueOf) 获取变量指针；
+2. 调用 [`reflect.Value.Elem`](https://draveness.me/golang/tree/reflect.Value.Elem) 获取指针指向的变量；
+3. 调用 [`reflect.Value.SetInt`](https://draveness.me/golang/tree/reflect.Value.SetInt) 更新变量的值；
+
+#### 类型和值
+
+当我们想要将一个变量转换成反射对象时，Go 语言会在编译期间完成类型转换，将变量的类型和值转换成了 `interface{}` 并等待运行期间使用 [`reflect`](https://golang.org/pkg/reflect/) 包获取接口中存储的信息。
+
+#### 更新变量
+
+当我们想要更新 [`reflect.Value`](https://draveness.me/golang/tree/reflect.Value) 时，就需要调用 [`reflect.Value.Set`](https://draveness.me/golang/tree/reflect.Value.Set) 更新反射对象，该方法会调用 [`reflect.flag.mustBeAssignable`](https://draveness.me/golang/tree/reflect.flag.mustBeAssignable) 和 [`reflect.flag.mustBeExported`](https://draveness.me/golang/tree/reflect.flag.mustBeExported) 分别检查当前反射对象是否是可以被设置的以及字段是否是对外公开的：
+
+```go
+func (v Value) Set(x Value) {
+	v.mustBeAssignable()
+	x.mustBeExported()
+	var target unsafe.Pointer
+	if v.kind() == Interface {
+		target = v.ptr
+	}
+	x = x.assignTo("reflect.Set", v.typ, target)
+	typedmemmove(v.typ, v.ptr, x.ptr)
+}
+```
+
+[`reflect.Value.Set`](https://draveness.me/golang/tree/reflect.Value.Set) 会调用 [`reflect.Value.assignTo`](https://draveness.me/golang/tree/reflect.Value.assignTo) 并返回一个新的反射对象，这个返回的反射对象指针会直接覆盖原反射变量。
+
+[`reflect.Value.assignTo`](https://draveness.me/golang/tree/reflect.Value.assignTo) 会根据当前和被设置的反射对象类型创建一个新的 [`reflect.Value`](https://draveness.me/golang/tree/reflect.Value) 结构体：
+
+- 如果两个反射对象的类型是可以被直接替换，就会直接返回目标反射对象；
+- 如果当前反射对象是接口并且目标对象实现了接口，就会把目标对象简单包装成接口值；
+
+在变量更新的过程中，[`reflect.Value.assignTo`](https://draveness.me/golang/tree/reflect.Value.assignTo) 返回的 [`reflect.Value`](https://draveness.me/golang/tree/reflect.Value) 中的指针会覆盖当前反射对象中的指针实现变量的更新。
+
+#### 实现协议
+
+[`reflect`](https://golang.org/pkg/reflect/) 包还为我们提供了 [`reflect.rtype.Implements`](https://draveness.me/golang/tree/reflect.rtype.Implements) 方法可以用于判断某些类型是否遵循特定的接口。在 Go 语言中获取结构体的反射类型 [`reflect.Type`](https://draveness.me/golang/tree/reflect.Type) 还是比较容易的，但是想要获得接口类型需要通过以下方式：
+
+```go
+reflect.TypeOf((*<interface>)(nil)).Elem()
+```
+
+我们通过一个例子在介绍如何判断一个类型是否实现了某个接口。假设我们需要判断如下代码中的 `CustomError` 是否实现了 Go 语言标准库中的 `error` 接口：
+
+```go
+type CustomError struct{}
+
+func (*CustomError) Error() string {
+	return ""
+}
+
+func main() {
+	typeOfError := reflect.TypeOf((*error)(nil)).Elem()
+	customErrorPtr := reflect.TypeOf(&CustomError{})
+	customError := reflect.TypeOf(CustomError{})
+
+	fmt.Println(customErrorPtr.Implements(typeOfError)) // #=> true
+	fmt.Println(customError.Implements(typeOfError)) // #=> false
+}
+```
+
