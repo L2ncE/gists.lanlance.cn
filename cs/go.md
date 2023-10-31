@@ -1672,3 +1672,570 @@ func main() {
 }
 ```
 
+### 119. for 与 range
+
+#### 现象
+
+##### 循环永动机
+
+如果我们在遍历数组的同时修改数组的元素，能否得到一个永远都不会停止的循环呢？
+
+```go
+func main() {
+	arr := []int{1, 2, 3}
+	for _, v := range arr {
+		arr = append(arr, v)
+	}
+	fmt.Println(arr)
+}
+
+$ go run main.go
+1 2 3 1 2 3
+```
+
+上述代码的输出意味着循环只遍历了原始切片中的三个元素，我们在遍历切片时追加的元素不会增加循环的执行次数，所以循环最终还是停了下来。
+
+对于所有的 range 循环，Go 语言都会在编译期将原切片或者数组赋值给一个新变量 `ha`，在赋值的过程中就发生了拷贝，而我们又通过 `len` 关键字预先获取了切片的长度，所以在循环中追加新的元素也不会改变循环执行的次数，这也就解释了循环永动机的现象。
+##### 神奇的指针
+
+第二个例子是使用 Go 语言经常会犯的错误。当我们在遍历一个数组时，如果获取 `range` 返回变量的地址并保存到另一个数组或者哈希时，会遇到令人困惑的现象，下面的代码会输出 “3 3 3”：
+
+```go
+func main() {
+	arr := []int{1, 2, 3}
+	newArr := []*int{}
+	for _, v := range arr {
+		newArr = append(newArr, &v)
+	}
+	for _, v := range newArr {
+		fmt.Println(*v)
+	}
+}
+
+$ go run main.go
+3 3 3
+```
+
+一些有经验的开发者不经意也会犯这种错误，正确的做法应该是使用 `&arr[i]` 替代 `&v`。
+
+##### 遍历清空数组
+
+当我们想要在 Go 语言中清空一个切片或者哈希时，一般都会使用以下的方法将切片中的元素置零：
+
+```go
+func main() {
+	arr := []int{1, 2, 3}
+	for i, _ := range arr {
+		arr[i] = 0
+	}
+}
+```
+
+依次遍历切片和哈希看起来是非常耗费性能的，因为数组、切片和哈希占用的内存空间都是连续的，所以最快的方法是直接清空这片内存中的内容。
+
+[`cmd/compile/internal/gc.arrayClear`](https://draveness.me/golang/tree/cmd/compile/internal/gc.arrayClear) 是一个非常有趣的优化，它会优化 Go 语言遍历数组或者切片并删除全部元素的逻辑：
+
+```go
+// 原代码
+for i := range a {
+	a[i] = zero
+}
+
+// 优化后
+if len(a) != 0 {
+	hp = &a[0]
+	hn = len(a)*sizeof(elem(a))
+	memclrNoHeapPointers(hp, hn)
+	i = len(a) - 1
+}
+```
+
+相比于依次清除数组或者切片中的数据，Go 语言会直接使用 [`runtime.memclrNoHeapPointers`](https://draveness.me/golang/tree/runtime.memclrNoHeapPointers) 或者 [`runtime.memclrHasPointers`](https://draveness.me/golang/tree/runtime.memclrHasPointers) 清除目标数组内存空间中的全部数据，并在执行完成后更新遍历数组的索引，这也印证了我们在遍历清空数组中观察到的现象。
+
+##### 随机遍历
+
+当我们在 Go 语言中使用 `range` 遍历哈希表时，往往都会使用如下的代码结构，但是这段代码在每次运行时都会打印出不同的结果：
+
+```go
+func main() {
+	hash := map[string]int{
+		"1": 1,
+		"2": 2,
+		"3": 3,
+	}
+	for k, v := range hash {
+		println(k, v)
+	}
+}
+```
+
+两次运行上述代码可能会得到不同的结果，第一次会打印 `2 3 1`，第二次会打印 `1 2 3`，如果我们运行的次数足够多，最后会得到几种不同的遍历顺序。
+
+```bash
+$ go run main.go
+2 2
+3 3
+1 1
+
+$ go run main.go
+1 1
+2 2
+3 3
+```
+
+Go 语言在运行时为哈希表的遍历引入了不确定性，也是告诉所有 Go 语言的使用者，程序不要依赖于哈希表的稳定遍历。
+
+#### 经典循环
+
+##### 哈希表
+
+首先会选出一个绿色的正常桶开始遍历，随后遍历所有黄色的溢出桶，最后依次按照索引顺序遍历哈希表中其他的桶，直到所有的桶都被遍历完成。
+
+##### 字符串
+
+遍历字符串的过程与数组、切片和哈希表非常相似，只是在遍历时会获取字符串中索引对应的字节并将字节转换成 `rune`。我们在遍历字符串时拿到的值都是 `rune` 类型的变量，`for i, r := range s {}` 的结构都会被转换成如下所示的形式：
+
+```go
+ha := s
+for hv1 := 0; hv1 < len(ha); {
+    hv1t := hv1
+    hv2 := rune(ha[hv1])
+    if hv2 < utf8.RuneSelf {
+        hv1++
+    } else {
+        hv2, hv1 = decoderune(ha, hv1)
+    }
+    v1, v2 = hv1t, hv2
+}
+```
+
+字符串是一个只读的字节数组切片，所以范围循环在编译期间生成的框架与切片非常类似，只是细节有一些不同。
+
+使用下标访问字符串中的元素时得到的就是字节，但是这段代码会将当前的字节转换成 `rune` 类型。如果当前的 `rune` 是 ASCII 的，那么只会占用一个字节长度，每次循环体运行之后只需要将索引加一，但是如果当前 `rune` 占用了多个字节就会使用 [`runtime.decoderune`](https://draveness.me/golang/tree/runtime.decoderune) 函数解码，具体的过程就不在这里详细介绍了。
+
+##### 通道
+
+使用 range 遍历 Channel 也是比较常见的做法，一个形如 `for v := range ch {}` 的语句最终会被转换成如下的格式：
+
+```go
+ha := a
+hv1, hb := <-ha
+for ; hb != false; hv1, hb = <-ha {
+    v1 := hv1
+    hv1 = nil
+    ...
+}
+```
+
+这里的代码可能与编译器生成的稍微有一些出入，但是结构和效果是完全相同的。该循环会使用 `<-ch` 从管道中取出等待处理的值，这个操作会调用 [`runtime.chanrecv2`](https://draveness.me/golang/tree/runtime.chanrecv2) 并阻塞当前的协程，当 [`runtime.chanrecv2`](https://draveness.me/golang/tree/runtime.chanrecv2) 返回时会根据布尔值 `hb` 判断当前的值是否存在：
+
+- 如果不存在当前值，意味着当前的管道已经被关闭；
+- 如果存在当前值，会为 `v1` 赋值并清除 `hv1` 变量中的数据，然后重新陷入阻塞等待新数据；
+
+### 120. select 设计
+
+C 语言的 `select` 系统调用可以同时监听多个文件描述符的可读或者可写的状态，Go 语言中的 `select` 也能够让 Goroutine 同时等待多个 Channel 可读或者可写，在多个文件或者 Channel 状态改变之前，`select` 会一直阻塞当前线程或者 Goroutine。
+
+`select` 是与 `switch` 相似的控制结构，与 `switch` 不同的是，`select` 中虽然也有多个 `case`，但是这些 `case` 中的表达式必须都是 Channel 的收发操作。下面的代码就展示了一个包含 Channel 收发操作的 `select` 结构：
+
+```go
+func fibonacci(c, quit chan int) {
+	x, y := 0, 1
+	for {
+		select {
+		case c <- x:
+			x, y = y, x+y
+		case <-quit:
+			fmt.Println("quit")
+			return
+		}
+	}
+}
+```
+
+上述控制结构会等待 `c <- x` 或者 `<-quit` 两个表达式中任意一个返回。无论哪一个表达式返回都会立刻执行 `case`中的代码，当 `select` 中的两个 `case` 同时被触发时，会随机执行其中的一个。
+
+#### 现象
+
+当我们在 Go 语言中使用 `select` 控制结构时，会遇到两个有趣的现象：
+
+1. `select` 能在 Channel 上进行非阻塞的收发操作；
+2. `select` 在遇到多个 Channel 同时响应时，会随机执行一种情况；
+
+##### 非阻塞的收发
+
+在通常情况下，`select` 语句会阻塞当前 Goroutine 并等待多个 Channel 中的一个达到可以收发的状态。但是如果 `select` 控制结构中包含 `default` 语句，那么这个 `select` 语句在执行时会遇到以下两种情况：
+
+1. 当存在可以收发的 Channel 时，直接处理该 Channel 对应的 `case`；
+2. 当不存在可以收发的 Channel 时，执行 `default` 中的语句；
+
+当我们运行下面的代码时就不会阻塞当前的 Goroutine，它会直接执行 `default` 中的代码。
+
+```go
+func main() {
+	ch := make(chan int)
+	select {
+	case i := <-ch:
+		println(i)
+
+	default:
+		println("default")
+	}
+}
+
+$ go run main.go
+default
+```
+
+非阻塞的 Channel 发送和接收操作还是很有必要的，在很多场景下我们不希望 Channel 操作阻塞当前 Goroutine，只是想看看 Channel 的可读或者可写状态，如下所示：
+
+```go
+errCh := make(chan error, len(tasks))
+wg := sync.WaitGroup{}
+wg.Add(len(tasks))
+for i := range tasks {
+    go func() {
+        defer wg.Done()
+        if err := tasks[i].Run(); err != nil {
+            errCh <- err
+        }
+    }()
+}
+wg.Wait()
+
+select {
+case err := <-errCh:
+    return err
+default:
+    return nil
+}
+```
+
+在上面这段代码中，我们不关心到底多少个任务执行失败了，只关心是否存在返回错误的任务，最后的 `select` 语句能很好地完成这个任务。
+
+#### 实现原理
+
+##### 常见流程
+
+在默认的情况下，编译器会使用如下的流程处理 `select` 语句：
+
+1. 将所有的 `case` 转换成包含 Channel 以及类型等信息的 [`runtime.scase`](https://draveness.me/golang/tree/runtime.scase) 结构体；
+2. 调用运行时函数 [`runtime.selectgo`](https://draveness.me/golang/tree/runtime.selectgo) 从多个准备就绪的 Channel 中选择一个可执行的 [`runtime.scase`](https://draveness.me/golang/tree/runtime.scase) 结构体；
+3. 通过 `for` 循环生成一组 `if` 语句，在语句中判断自己是不是被选中的 `case`；
+
+一个包含三个 `case` 的正常 `select` 语句其实会被展开成如下所示的逻辑，我们可以看到其中处理的三个部分：
+
+```go
+selv := [3]scase{}
+order := [6]uint16
+for i, cas := range cases {
+    c := scase{}
+    c.kind = ...
+    c.elem = ...
+    c.c = ...
+}
+chosen, revcOK := selectgo(selv, order, 3)
+if chosen == 0 {
+    ...
+    break
+}
+if chosen == 1 {
+    ...
+    break
+}
+if chosen == 2 {
+    ...
+    break
+}
+```
+
+展开后的代码片段中最重要的就是用于选择待执行 `case` 的运行时函数 [`runtime.selectgo`](https://draveness.me/golang/tree/runtime.selectgo)，这也是我们要关注的重点。因为这个函数的实现比较复杂， 所以这里分两部分进行执行过程：
+
+1. 执行一些必要的初始化操作并确定 `case` 的处理顺序；
+2. 在循环中根据 `case` 的类型做出不同的处理；
+
+#### 小结
+
+1. 空的 `select` 语句会被转换成调用 [`runtime.block`](https://draveness.me/golang/tree/runtime.block) 直接挂起当前 Goroutine；
+2. 如果 `select` 语句中只包含一个 `case`，编译器会将其转换成 `if ch == nil { block }; n;`表达式；
+    - 首先判断操作的 Channel 是不是空的；
+    - 然后执行 `case` 结构中的内容；
+3. 如果 `select` 语句中只包含两个 `case` 并且其中一个是 `default`，那么会使用 [`runtime.selectnbrecv`](https://draveness.me/golang/tree/runtime.selectnbrecv) 和 [`runtime.selectnbsend`](https://draveness.me/golang/tree/runtime.selectnbsend) 非阻塞地执行收发操作；
+4. 在默认情况下会通过 [`runtime.selectgo`](https://draveness.me/golang/tree/runtime.selectgo) 获取执行 `case` 的索引，并通过多个 `if` 语句执行对应 `case` 中的代码；
+
+在编译器已经对 `select` 语句进行优化之后，Go 语言会在运行时执行编译期间展开的 [`runtime.selectgo`](https://draveness.me/golang/tree/runtime.selectgo) 函数，该函数会按照以下的流程执行：
+
+1. 随机生成一个遍历的轮询顺序 `pollOrder` 并根据 Channel 地址生成锁定顺序 `lockOrder`；
+2. 根据 `pollOrder` 遍历所有的 `case` 查看是否有可以立刻处理的 Channel；
+    1. 如果存在，直接获取 `case` 对应的索引并返回；
+    2. 如果不存在，创建 [`runtime.sudog`](https://draveness.me/golang/tree/runtime.sudog) 结构体，将当前 Goroutine 加入到所有相关 Channel 的收发队列，并调用 [`runtime.gopark`](https://draveness.me/golang/tree/runtime.gopark) 挂起当前 Goroutine 等待调度器的唤醒；
+3. 当调度器唤醒当前 Goroutine 时，会再次按照 `lockOrder` 遍历所有的 `case`，从中查找需要被处理的 [`runtime.sudog`](https://draveness.me/golang/tree/runtime.sudog) 对应的索引；
+
+`select` 关键字是 Go 语言特有的控制结构，它的实现原理比较复杂，需要编译器和运行时函数的通力合作。
+
+### 121. defer
+
+#### 现象
+
+##### 作用域
+
+向 `defer` 关键字传入的函数会在函数返回之前运行。假设我们在 `for` 循环中多次调用 `defer` 关键字：
+
+```go
+func main() {
+	for i := 0; i < 5; i++ {
+		defer fmt.Println(i)
+	}
+}
+
+$ go run main.go
+4
+3
+2
+1
+0
+```
+
+运行上述代码会倒序执行传入 `defer` 关键字的所有表达式，因为最后一次调用 `defer` 时传入了 `fmt.Println(4)`，所以这段代码会优先打印 4。
+
+```go
+func main() {
+    {
+        defer fmt.Println("defer runs")
+        fmt.Println("block ends")
+    }
+    
+    fmt.Println("main ends")
+}
+
+$ go run main.go
+block ends
+main ends
+defer runs
+```
+
+从上述代码的输出我们会发现，`defer` 传入的函数不是在退出代码块的作用域时执行的，它只会在当前函数和方法返回之前被调用。
+
+##### 预计算参数
+
+```go
+func main() {
+	startedAt := time.Now()
+	defer fmt.Println(time.Since(startedAt))
+	
+	time.Sleep(time.Second)
+}
+
+$ go run main.go
+0s
+```
+
+我们会发现调用 `defer` 关键字会立刻拷贝函数中引用的外部参数，所以 `time.Since(startedAt)` 的结果不是在 `main` 函数退出之前计算的，而是在 `defer` 关键字调用时计算的，最终导致上述代码输出 0s。
+
+想要解决这个问题的方法非常简单，我们只需要向 `defer` 关键字传入匿名函数：
+
+```go
+func main() {
+	startedAt := time.Now()
+	defer func() { fmt.Println(time.Since(startedAt)) }()
+	
+	time.Sleep(time.Second)
+}
+
+$ go run main.go
+1s
+```
+
+虽然调用 `defer` 关键字时也使用值传递，但是因为拷贝的是函数指针，所以 `time.Since(startedAt)` 会在 `main` 函数返回前调用并打印出符合预期的结果。
+
+#### 数据结构
+
+[`runtime._defer`](https://draveness.me/golang/tree/runtime._defer) 结构体是延迟调用链表上的一个元素，所有的结构体都会通过 `link` 字段串联成链表。
+
+#### 执行机制
+
+##### 堆上分配
+
+根据 [`cmd/compile/internal/gc.state.stmt`](https://draveness.me/golang/tree/cmd/compile/internal/gc.state.stmt) 方法对 `defer` 的处理我们可以看出，堆上分配的 [`runtime._defer`](https://draveness.me/golang/tree/runtime._defer)结构体是默认的兜底方案，当该方案被启用时，编译器会调用 [`cmd/compile/internal/gc.state.callResult`](https://draveness.me/golang/tree/cmd/compile/internal/gc.state.callResult) 和 [`cmd/compile/internal/gc.state.call`](https://draveness.me/golang/tree/cmd/compile/internal/gc.state.call)，这表示 `defer` 在编译器看来也是函数调用。
+
+##### 栈上分配
+
+在默认情况下，我们可以看到 Go 语言中 [`runtime._defer`](https://draveness.me/golang/tree/runtime._defer) 结构体都会在堆上分配，如果我们能够将部分结构体分配到栈上就可以节约内存分配带来的额外开销。
+
+Go 语言团队在 1.13 中对 `defer` 关键字进行了优化，当该关键字在函数体中最多执行一次时，编译期间的 [`cmd/compile/internal/gc.state.call`](https://draveness.me/golang/tree/cmd/compile/internal/gc.state.call) 会将结构体分配到栈上并调用 [`runtime.deferprocStack`](https://draveness.me/golang/tree/runtime.deferprocStack)。
+
+因为在编译期间我们已经创建了 [`runtime._defer`](https://draveness.me/golang/tree/runtime._defer) 结构体，所以在运行期间 [`runtime.deferprocStack`](https://draveness.me/golang/tree/runtime.deferprocStack) 只需要设置一些未在编译期间初始化的字段，就可以将栈上的 [`runtime._defer`](https://draveness.me/golang/tree/runtime._defer) 追加到函数的链表上。
+
+##### 开放编码
+
+Go 语言在 1.14 中通过开放编码（Open Coded）实现 `defer` 关键字，该设计使用代码内联优化 `defer` 关键的额外开销并引入函数数据 `funcdata` 管理 `panic` 的调用，该优化可以将 `defer` 的调用开销从 1.13 版本的 ~35ns 降低至 ~6ns 左右。
+
+然而开放编码作为一种优化 `defer` 关键字的方法，它不是在所有的场景下都会开启的，开放编码只会在满足以下的条件时启用：
+
+1. 函数的 `defer` 数量少于或者等于 8 个；
+2. 函数的 `defer` 关键字不能在循环中执行；
+3. 函数的 `return` 语句与 `defer` 语句的乘积小于或者等于 15 个；
+
+### 122. panic 和 recover
+
+- `panic` 能够改变程序的控制流，调用 `panic` 后会立刻停止执行当前函数的剩余代码，并在当前 Goroutine 中递归执行调用方的 `defer`；
+- `recover` 可以中止 `panic` 造成的程序崩溃。它是一个只能在 `defer` 中发挥作用的函数，在其他作用域中调用不会发挥作用；
+
+#### 现象
+
+##### 跨协程失效
+
+首先要介绍的现象是 `panic` 只会触发当前 Goroutine 的延迟函数调用，我们可以通过如下所示的代码了解该现象：
+
+```go
+func main() {
+	defer println("in main")
+	go func() {
+		defer println("in goroutine")
+		panic("")
+	}()
+
+	time.Sleep(1 * time.Second)
+}
+
+$ go run main.go
+in goroutine
+panic:
+...
+```
+
+当我们运行这段代码时会发现 `main` 函数中的 `defer` 语句并没有执行，执行的只有当前 Goroutine 中的 `defer`。
+
+ `defer` 关键字对应的 [`runtime.deferproc`](https://draveness.me/golang/tree/runtime.deferproc) 会将延迟调用函数与调用方所在 Goroutine 进行关联。所以当程序发生崩溃时只会调用当前 Goroutine 的延迟调用函数也是非常合理的。
+
+##### 失效的崩溃恢复
+
+初学 Go 语言的读者可能会写出下面的代码，在主程序中调用 `recover` 试图中止程序的崩溃，但是从运行的结果中我们也能看出，下面的程序没有正常退出。
+
+```go
+func main() {
+	defer fmt.Println("in main")
+	if err := recover(); err != nil {
+		fmt.Println(err)
+	}
+
+	panic("unknown err")
+}
+
+$ go run main.go
+in main
+panic: unknown err
+
+goroutine 1 [running]:
+main.main()
+	...
+exit status 2
+```
+
+仔细分析一下这个过程就能理解这种现象背后的原因，`recover` 只有在发生 `panic` 之后调用才会生效。然而在上面的控制流中，`recover` 是在 `panic` 之前调用的，并不满足生效的条件，所以我们需要在 `defer` 中使用 `recover` 关键字。
+
+##### 嵌套崩溃
+
+Go 语言中的 `panic` 是可以多次嵌套调用的。一些熟悉 Go 语言的读者很可能也不知道这个知识点，如下所示的代码就展示了如何在 `defer` 函数中多次调用 `panic`：
+
+```go
+func main() {
+	defer fmt.Println("in main")
+	defer func() {
+		defer func() {
+			panic("panic again and again")
+		}()
+		panic("panic again")
+	}()
+
+	panic("panic once")
+}
+
+$ go run main.go
+in main
+panic: panic once
+	panic: panic again
+	panic: panic again and again
+
+goroutine 1 [running]:
+...
+exit status 2
+```
+
+从上述程序输出的结果，我们可以确定程序多次调用 `panic` 也不会影响 `defer` 函数的正常执行，所以使用 `defer`进行收尾工作一般来说都是安全的。
+
+#### 数据结构
+
+`panic` 关键字在 Go 语言的源代码是由数据结构 [`runtime._panic`](https://draveness.me/golang/tree/runtime._panic) 表示的。每当我们调用 `panic` 都会创建一个如下所示的数据结构存储相关信息：
+
+```go
+type _panic struct {
+	argp      unsafe.Pointer
+	arg       interface{}
+	link      *_panic
+	recovered bool
+	aborted   bool
+	pc        uintptr
+	sp        unsafe.Pointer
+	goexit    bool
+}
+```
+
+1. `argp` 是指向 `defer` 调用时参数的指针；
+2. `arg` 是调用 `panic` 时传入的参数；
+3. `link` 指向了更早调用的 [`runtime._panic`](https://draveness.me/golang/tree/runtime._panic) 结构；
+4. `recovered` 表示当前 [`runtime._panic`](https://draveness.me/golang/tree/runtime._panic) 是否被 `recover` 恢复；
+5. `aborted` 表示当前的 `panic` 是否被强行终止；
+
+从数据结构中的 `link` 字段我们就可以推测出以下的结论：`panic` 函数可以被连续多次调用，它们之间通过 `link` 可以组成链表。
+
+#### 程序崩溃
+
+编译器会将关键字 `panic` 转换成 [`runtime.gopanic`](https://draveness.me/golang/tree/runtime.gopanic)，该函数的执行过程包含以下几个步骤：
+
+1. 创建新的 [`runtime._panic`](https://draveness.me/golang/tree/runtime._panic) 并添加到所在 Goroutine 的 `_panic` 链表的最前面；
+2. 在循环中不断从当前 Goroutine 的 `_defer` 中链表获取 [`runtime._defer`](https://draveness.me/golang/tree/runtime._defer) 并调用 [`runtime.reflectcall`](https://draveness.me/golang/tree/runtime.reflectcall) 运行延迟调用函数；
+3. 调用 [`runtime.fatalpanic`](https://draveness.me/golang/tree/runtime.fatalpanic) 中止整个程序；
+
+#### 崩溃恢复
+
+```go
+func gorecover(argp uintptr) interface{} {
+	gp := getg()
+	p := gp._panic
+	if p != nil && !p.recovered && argp == uintptr(p.argp) {
+		p.recovered = true
+		return p.arg
+	}
+	return nil
+}
+```
+
+该函数的实现很简单，如果当前 Goroutine 没有调用 `panic`，那么该函数会直接返回 `nil`，这也是崩溃恢复在非 `defer` 中调用会失效的原因。在正常情况下，它会修改 [`runtime._panic`](https://draveness.me/golang/tree/runtime._panic) 的 `recovered` 字段。
+
+### 123. make 和 new
+
+- `make` 的作用是初始化内置的数据结构，也就是前面提到的切片、哈希表和 Channel
+- `new` 的作用是根据传入的类型分配一片内存空间并返回指向这片内存空间的指针
+
+#### make
+
+在编译期间的类型检查阶段，Go 语言会将代表 `make` 关键字的 `OMAKE` 节点根据参数类型的不同转换成了 `OMAKESLICE`、`OMAKEMAP` 和 `OMAKECHAN` 三种不同类型的节点，这些节点会调用不同的运行时函数来初始化相应的数据结构。
+
+#### new
+
+编译器会在中间代码生成阶段通过以下两个函数处理该关键字：
+
+1. [`cmd/compile/internal/gc.callnew`](https://draveness.me/golang/tree/cmd/compile/internal/gc.callnew) 会将关键字转换成 `ONEWOBJ` 类型的节点
+2. [`cmd/compile/internal/gc.state.expr`](https://draveness.me/golang/tree/cmd/compile/internal/gc.state.expr) 会根据申请空间的大小分两种情况处理：
+    1. 如果申请的空间为 0，就会返回一个表示空指针的 `zerobase` 变量；
+    2. 在遇到其他情况时会将关键字转换成 [`runtime.newobject`](https://draveness.me/golang/tree/runtime.newobject) 函数：
+
+[`runtime.newobject`](https://draveness.me/golang/tree/runtime.newobject) 函数会获取传入类型占用空间的大小，调用 [`runtime.mallocgc`](https://draveness.me/golang/tree/runtime.mallocgc) 在堆上申请一片内存空间并返回指向这片内存空间的指针：
+
+```go
+func newobject(typ *_type) unsafe.Pointer {
+	return mallocgc(typ.size, typ, true)
+}
+```
+
