@@ -2412,9 +2412,174 @@ func (m *Mutex) Unlock() {
 }
 ```
 
-[`sync.Mutex.unlockSlow`](https://draveness.me/golang/tree/sync.Mutex.unlockSlow) 会先校验锁状态的合法性 — 如果当前互斥锁已经被解锁过了会直接抛出异常 “sync: unlock of unlocked mutex” 中止当前程序。
-
 - 当互斥锁已经被解锁时，调用 [`sync.Mutex.Unlock`](https://draveness.me/golang/tree/sync.Mutex.Unlock) 会直接抛出异常；
 - 当互斥锁处于饥饿模式时，将锁的所有权交给队列中的下一个等待者，等待者会负责设置 `mutexLocked` 标志位；
 - 当互斥锁处于普通模式时，如果没有 Goroutine 等待锁的释放或者已经有被唤醒的 Goroutine 获得了锁，会直接返回；在其他情况下会通过 [`sync.runtime_Semrelease`](https://draveness.me/golang/tree/sync.runtime_Semrelease) 唤醒对应的 Goroutine；
+
+##### RWMutex
+
+###### 结构体
+
+[`sync.RWMutex`](https://draveness.me/golang/tree/sync.RWMutex) 中总共包含以下 5 个字段：
+
+```go
+type RWMutex struct {
+	w           Mutex
+	writerSem   uint32
+	readerSem   uint32
+	readerCount int32
+	readerWait  int32
+}
+```
+
+- `w` — 复用互斥锁提供的能力；
+- `writerSem` 和 `readerSem` — 分别用于写等待读和读等待写：
+- `readerCount` 存储了当前正在执行的读操作数量；
+- `readerWait` 表示当写操作被阻塞时等待的读操作个数；
+
+###### 流程
+
+- 调用 [`sync.RWMutex.Lock`](https://draveness.me/golang/tree/sync.RWMutex.Lock) 尝试获取写锁时；
+    - 每次 [`sync.RWMutex.RUnlock`](https://draveness.me/golang/tree/sync.RWMutex.RUnlock) 都会将 `readerCount`其减一，当它归零时该 Goroutine 会获得写锁；
+    - 将 `readerCount` 减少 `rwmutexMaxReaders` 个数以阻塞后续的读操作；
+- 调用 [`sync.RWMutex.Unlock`](https://draveness.me/golang/tree/sync.RWMutex.Unlock) 释放写锁时，会先通知所有的读操作，然后才会释放持有的互斥锁；
+
+读写互斥锁在互斥锁之上提供了额外的更细粒度的控制，能够在读操作远远多于写操作时提升性能。
+
+##### WaitGroup
+
+###### 结构体
+
+[`sync.WaitGroup`](https://draveness.me/golang/tree/sync.WaitGroup) 结构体中只包含两个成员变量：
+
+```go
+type WaitGroup struct {
+	noCopy noCopy
+	state1 [3]uint32
+}
+```
+
+- `noCopy` — 保证 [`sync.WaitGroup`](https://draveness.me/golang/tree/sync.WaitGroup) 不会被开发者通过再赋值的方式拷贝；
+- `state1` — 存储着状态和信号量；
+
+###### 接口
+
+[`sync.WaitGroup`](https://draveness.me/golang/tree/sync.WaitGroup) 对外暴露了三个方法 — [`sync.WaitGroup.Add`](https://draveness.me/golang/tree/sync.WaitGroup.Add)、[`sync.WaitGroup.Wait`](https://draveness.me/golang/tree/sync.WaitGroup.Wait) 和 [`sync.WaitGroup.Done`](https://draveness.me/golang/tree/sync.WaitGroup.Done)。
+
+- [`sync.WaitGroup`](https://draveness.me/golang/tree/sync.WaitGroup) 必须在 [`sync.WaitGroup.Wait`](https://draveness.me/golang/tree/sync.WaitGroup.Wait) 方法返回之后才能被重新使用；
+- [`sync.WaitGroup.Done`](https://draveness.me/golang/tree/sync.WaitGroup.Done) 只是对 [`sync.WaitGroup.Add`](https://draveness.me/golang/tree/sync.WaitGroup.Add) 方法的简单封装，我们可以向 [`sync.WaitGroup.Add`](https://draveness.me/golang/tree/sync.WaitGroup.Add) 方法传入任意负数（需要保证计数器非负）快速将计数器归零以唤醒等待的 Goroutine；
+- 可以同时有多个 Goroutine 等待当前 [`sync.WaitGroup`](https://draveness.me/golang/tree/sync.WaitGroup) 计数器的归零，这些 Goroutine 会被同时唤醒；
+
+##### Once
+
+Go 语言标准库中 [`sync.Once`](https://draveness.me/golang/tree/sync.Once) 可以保证在 Go 程序运行期间的某段代码只会执行一次。在运行如下所示的代码时，我们会看到如下所示的运行结果：
+
+```go
+func main() {
+    o := &sync.Once{}
+    for i := 0; i < 10; i++ {
+        o.Do(func() {
+            fmt.Println("only once")
+        })
+    }
+}
+
+$ go run main.go
+only once
+```
+
+###### 结构体
+
+每一个 [`sync.Once`](https://draveness.me/golang/tree/sync.Once) 结构体中都只包含一个用于标识代码块是否执行过的 `done` 以及一个互斥锁 [`sync.Mutex`](https://draveness.me/golang/tree/sync.Mutex)：
+
+```go
+type Once struct {
+	done uint32
+	m    Mutex
+}
+```
+
+###### 接口
+
+[`sync.Once.Do`](https://draveness.me/golang/tree/sync.Once.Do) 是 [`sync.Once`](https://draveness.me/golang/tree/sync.Once) 结构体对外唯一暴露的方法，该方法会接收一个入参为空的函数：
+
+- 如果传入的函数已经执行过，会直接返回；
+- 如果传入的函数没有执行过，会调用 [`sync.Once.doSlow`](https://draveness.me/golang/tree/sync.Once.doSlow) 执行传入的函数：
+
+```go
+func (o *Once) Do(f func()) {
+	if atomic.LoadUint32(&o.done) == 0 {
+		o.doSlow(f)
+	}
+}
+
+func (o *Once) doSlow(f func()) {
+	o.m.Lock()
+	defer o.m.Unlock()
+	if o.done == 0 {
+		defer atomic.StoreUint32(&o.done, 1)
+		f()
+	}
+}
+```
+
+1. 为当前 Goroutine 获取互斥锁；
+2. 执行传入的无入参函数；
+3. 运行延迟函数调用，将成员变量 `done` 更新成 1；
+
+[`sync.Once`](https://draveness.me/golang/tree/sync.Once) 会通过成员变量 `done` 确保函数不会执行第二次。
+
+Tips:
+
+- [`sync.Once.Do`](https://draveness.me/golang/tree/sync.Once.Do) 方法中传入的函数只会被执行一次，哪怕函数中发生了 `panic`；
+- 两次调用 [`sync.Once.Do`](https://draveness.me/golang/tree/sync.Once.Do) 方法传入不同的函数只会执行第一次调传入的函数；
+
+##### Cond
+
+Go 语言标准库中还包含条件变量 [`sync.Cond`](https://draveness.me/golang/tree/sync.Cond)，它可以让一组的 Goroutine 都在满足特定条件时被唤醒。每一个 [`sync.Cond`](https://draveness.me/golang/tree/sync.Cond) 结构体在初始化时都需要传入一个互斥锁，我们可以通过下面的例子了解它的使用方法：
+
+```go
+var status int64
+
+func main() {
+	c := sync.NewCond(&sync.Mutex{})
+	for i := 0; i < 10; i++ {
+		go listen(c)
+	}
+	time.Sleep(1 * time.Second)
+	go broadcast(c)
+
+	ch := make(chan os.Signal, 1)
+	signal.Notify(ch, os.Interrupt)
+	<-ch
+}
+
+func broadcast(c *sync.Cond) {
+	c.L.Lock()
+	atomic.StoreInt64(&status, 1)
+	c.Broadcast()
+	c.L.Unlock()
+}
+
+func listen(c *sync.Cond) {
+	c.L.Lock()
+	for atomic.LoadInt64(&status) != 1 {
+		c.Wait()
+	}
+	fmt.Println("listen")
+	c.L.Unlock()
+}
+
+$ go run main.go
+listen
+...
+listen
+```
+
+上述代码同时运行了 11 个 Goroutine，这 11 个 Goroutine 分别做了不同事情：
+
+- 10 个 Goroutine 通过 [`sync.Cond.Wait`](https://draveness.me/golang/tree/sync.Cond.Wait) 等待特定条件的满足；
+- 1 个 Goroutine 会调用 [`sync.Cond.Broadcast`](https://draveness.me/golang/tree/sync.Cond.Broadcast) 唤醒所有陷入等待的 Goroutine；
+
+调用 [`sync.Cond.Broadcast`](https://draveness.me/golang/tree/sync.Cond.Broadcast) 方法后，上述代码会打印出 10 次 “listen” 并结束调用。
 
