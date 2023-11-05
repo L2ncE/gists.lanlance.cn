@@ -2583,3 +2583,173 @@ listen
 
 调用 [`sync.Cond.Broadcast`](https://draveness.me/golang/tree/sync.Cond.Broadcast) 方法后，上述代码会打印出 10 次 “listen” 并结束调用。
 
+###### 结构体
+
+[`sync.Cond`](https://draveness.me/golang/tree/sync.Cond) 的结构体中包含以下 4 个字段：
+
+```go
+type Cond struct {
+	noCopy  noCopy
+	L       Locker
+	notify  notifyList
+	checker copyChecker
+}
+```
+
+- `noCopy` — 用于保证结构体不会在编译期间拷贝；
+- `copyChecker` — 用于禁止运行期间发生的拷贝；
+- `L` — 用于保护内部的 `notify` 字段，`Locker` 接口类型的变量；
+- `notify` — 一个 Goroutine 的链表，它是实现同步机制的核心结构；
+
+```go
+type notifyList struct {
+	wait uint32
+	notify uint32
+
+	lock mutex
+	head *sudog
+	tail *sudog
+}
+```
+
+在 [`sync.notifyList`](https://draveness.me/golang/tree/sync.notifyList) 结构体中，`head` 和 `tail` 分别指向的链表的头和尾，`wait` 和 `notify` 分别表示当前正在等待的和已经通知到的 Goroutine 的索引。
+
+###### 接口
+
+[`sync.Cond`](https://draveness.me/golang/tree/sync.Cond) 对外暴露的 [`sync.Cond.Wait`](https://draveness.me/golang/tree/sync.Cond.Wait) 方法会将当前 Goroutine 陷入休眠状态，它的执行过程分成以下两个步骤：
+
+1. 调用 [`runtime.notifyListAdd`](https://draveness.me/golang/tree/runtime.notifyListAdd) 将等待计数器加一并解锁；
+2. 调用 [`runtime.notifyListWait`](https://draveness.me/golang/tree/runtime.notifyListWait) 等待其他 Goroutine 的唤醒并加锁：
+
+除了将当前 Goroutine 追加到链表的末端之外，我们还会调用 [`runtime.goparkunlock`](https://draveness.me/golang/tree/runtime.goparkunlock) 将当前 Goroutine 陷入休眠，该函数也是在 Go 语言切换 Goroutine 时经常会使用的方法，它会直接让出当前处理器的使用权并等待调度器的唤醒。
+
+[`sync.Cond.Signal`](https://draveness.me/golang/tree/sync.Cond.Signal) 和 [`sync.Cond.Broadcast`](https://draveness.me/golang/tree/sync.Cond.Broadcast) 就是用来唤醒陷入休眠的 Goroutine 的方法，它们的实现有一些细微的差别：
+
+- [`sync.Cond.Signal`](https://draveness.me/golang/tree/sync.Cond.Signal) 方法会唤醒队列最前面的 Goroutine；
+- [`sync.Cond.Broadcast`](https://draveness.me/golang/tree/sync.Cond.Broadcast) 方法会唤醒队列中全部的 Goroutine；
+
+#### ErrGroup
+
+[`golang/sync/errgroup.Group`](https://draveness.me/golang/tree/golang/sync/errgroup.Group) 为我们在一组 Goroutine 中提供了同步、错误传播以及上下文取消的功能，我们可以使用如下所示的方式并行获取网页的数据：
+
+```go
+var g errgroup.Group
+var urls = []string{
+    "http://www.golang.org/",
+    "http://www.google.com/",
+}
+for i := range urls {
+    url := urls[i]
+    g.Go(func() error {
+        resp, err := http.Get(url)
+        if err == nil {
+            resp.Body.Close()
+        }
+        return err
+    })
+}
+if err := g.Wait(); err == nil {
+    fmt.Println("Successfully fetched all URLs.")
+}
+```
+
+[`golang/sync/errgroup.Group.Go`](https://draveness.me/golang/tree/golang/sync/errgroup.Group.Go) 方法能够创建一个 Goroutine 并在其中执行传入的函数，而 [`golang/sync/errgroup.Group.Wait`](https://draveness.me/golang/tree/golang/sync/errgroup.Group.Wait) 会等待所有 Goroutine 全部返回，该方法的不同返回结果也有不同的含义：
+
+- 如果返回错误 — 这一组 Goroutine 最少返回一个错误；
+- 如果返回空值 — 所有 Goroutine 都成功执行；
+
+##### 结构体
+
+1. `cancel` — 创建 [`context.Context`](https://draveness.me/golang/tree/context.Context) 时返回的取消函数，用于在多个 Goroutine 之间同步取消信号；
+2. `wg` — 用于等待一组 Goroutine 完成子任务的同步原语；
+3. `errOnce` — 用于保证只接收一个子任务返回的错误；
+
+```go
+type Group struct {
+	cancel func()
+
+	wg sync.WaitGroup
+
+	errOnce sync.Once
+	err     error
+}
+```
+
+这些字段共同组成了 [`golang/sync/errgroup.Group`](https://draveness.me/golang/tree/golang/sync/errgroup.Group) 结构体并为我们提供同步、错误传播以及上下文取消等功能。
+
+#### Semaphore
+
+信号量是在并发编程中常见的一种同步机制，在需要控制访问资源的进程数量时就会用到信号量，它会保证持有的计数器在 0 到初始化的权重之间波动。
+
+- 每次获取资源时都会将信号量中的计数器减去对应的数值，在释放时重新加回来；
+- 当遇到计数器大于信号量大小时，会进入休眠等待其他线程释放信号；
+
+Go 语言的扩展包中就提供了带权重的信号量 [`golang/sync/semaphore.Weighted`](https://draveness.me/golang/tree/golang/sync/semaphore.Weighted)，我们可以按照不同的权重对资源的访问进行管理，这个结构体对外也只暴露了四个方法：
+
+- [`golang/sync/semaphore.NewWeighted`](https://draveness.me/golang/tree/golang/sync/semaphore.NewWeighted) 用于创建新的信号量；
+- [`golang/sync/semaphore.Weighted.Acquire`](https://draveness.me/golang/tree/golang/sync/semaphore.Weighted.Acquire) 阻塞地获取指定权重的资源，如果当前没有空闲资源，会陷入休眠等待；
+- [`golang/sync/semaphore.Weighted.TryAcquire`](https://draveness.me/golang/tree/golang/sync/semaphore.Weighted.TryAcquire) 非阻塞地获取指定权重的资源，如果当前没有空闲资源，会直接返回 `false`；
+- [`golang/sync/semaphore.Weighted.Release`](https://draveness.me/golang/tree/golang/sync/semaphore.Weighted.Release) 用于释放指定权重的资源；
+
+##### SingleFlight
+
+[`golang/sync/singleflight.Group`](https://draveness.me/golang/tree/golang/sync/singleflight.Group) 是 Go 语言扩展包中提供了另一种同步原语，它能够在一个服务中抑制对下游的多次重复请求。一个比较常见的使用场景是：我们在使用 Redis 对数据库中的数据进行缓存，发生缓存击穿时，大量的流量都会打到数据库上进而影响服务的尾延时。
+
+在资源的获取非常昂贵时（例如：访问缓存、数据库），就很适合使用 [`golang/sync/singleflight.Group`](https://draveness.me/golang/tree/golang/sync/singleflight.Group) 优化服务。我们来了解一下它的使用方法：
+
+```go
+type service struct {
+    requestGroup singleflight.Group
+}
+
+func (s *service) handleRequest(ctx context.Context, request Request) (Response, error) {
+    v, err, _ := requestGroup.Do(request.Hash(), func() (interface{}, error) {
+        rows, err := // select * from tables
+        if err != nil {
+            return nil, err
+        }
+        return rows, nil
+    })
+    if err != nil {
+        return nil, err
+    }
+    return Response{
+        rows: rows,
+    }, nil
+}
+```
+
+因为请求的哈希在业务上一般表示相同的请求，所以上述代码使用它作为请求的键。当然，我们也可以选择其他的字段作为 [`golang/sync/singleflight.Group.Do`](https://draveness.me/golang/tree/golang/sync/singleflight.Group.Do) 方法的第一个参数减少重复的请求。
+
+##### 结构体
+
+[`golang/sync/singleflight.Group`](https://draveness.me/golang/tree/golang/sync/singleflight.Group) 结构体由一个互斥锁 [`sync.Mutex`](https://draveness.me/golang/tree/sync.Mutex) 和一个映射表组成，每一个 [`golang/sync/singleflight.call`](https://draveness.me/golang/tree/golang/sync/singleflight.call) 结构体都保存了当前调用对应的信息：
+
+```go
+type Group struct {
+	mu sync.Mutex
+	m  map[string]*call
+}
+
+type call struct {
+	wg sync.WaitGroup
+
+	val interface{}
+	err error
+
+	dups  int
+	chans []chan<- Result
+}
+```
+
+[`golang/sync/singleflight.call`](https://draveness.me/golang/tree/golang/sync/singleflight.call) 结构体中的 `val` 和 `err` 字段都只会在执行传入的函数时赋值一次并在 [`sync.WaitGroup.Wait`](https://draveness.me/golang/tree/sync.WaitGroup.Wait) 返回时被读取；`dups` 和 `chans` 两个字段分别存储了抑制的请求数量以及用于同步结果的 Channel。
+
+##### 接口
+
+- [`golang/sync/singleflight.Group.Do`](https://draveness.me/golang/tree/golang/sync/singleflight.Group.Do) — 同步等待的方法；
+- [`golang/sync/singleflight.Group.DoChan`](https://draveness.me/golang/tree/golang/sync/singleflight.Group.DoChan) — 返回 Channel 异步等待的方法；
+
+这两个方法在功能上没有太多的区别，只是在接口的表现上稍有不同。
+
+### 126. 计时器
+
