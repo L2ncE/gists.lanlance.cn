@@ -2753,3 +2753,158 @@ type call struct {
 
 ### 126. 计时器
 
+#### 数据结构
+
+[`runtime.timer`](https://draveness.me/golang/tree/runtime.timer) 是 Go 语言计时器的内部表示，每一个计时器都存储在对应处理器的最小四叉堆中，下面是运行时计时器对应的结构体：
+
+```go
+type timer struct {
+	pp puintptr
+
+	when     int64
+	period   int64
+	f        func(interface{}, uintptr)
+	arg      interface{}
+	seq      uintptr
+	nextwhen int64
+	status   uint32
+}
+```
+
+- `when` — 当前计时器被唤醒的时间；
+- `period` — 两次被唤醒的间隔；
+- `f` — 每当计时器被唤醒时都会调用的函数；
+- `arg` — 计时器被唤醒时调用 `f` 传入的参数；
+- `nextWhen` — 计时器处于 `timerModifiedXX` 状态时，用于设置 `when`字段；
+- `status` — 计时器的状态；
+
+然而这里的 [`runtime.timer`](https://draveness.me/golang/tree/runtime.timer) 只是计时器运行时的私有结构体，对外暴露的计时器使用 [`time.Timer`](https://draveness.me/golang/tree/time.Timer) 结体：
+
+```go
+type Timer struct {
+	C <-chan Time
+	r runtimeTimer
+}
+```
+
+[`time.Timer`](https://draveness.me/golang/tree/time.Timer) 计时器必须通过 [`time.NewTimer`](https://draveness.me/golang/tree/time.NewTimer)、[`time.AfterFunc`](https://draveness.me/golang/tree/time.AfterFunc) 或者 [`time.After`](https://draveness.me/golang/tree/time.After) 函数创建。 当计时器失效时，订阅计时器 Channel 的 Goroutine 会收到计时器失效的时间。
+
+#### 状态机
+
+运行时使用状态机的方式处理全部的计时器，其中包括 10 种状态和几种操作。由于 Go 语言的计时器需要同时支持增加、删除、修改和重置等操作，所以它的状态非常复杂，目前会包含以下 10 种可能：
+
+|状态|解释|
+|---|---|
+|timerNoStatus|还没有设置状态|
+|timerWaiting|等待触发|
+|timerRunning|运行计时器函数|
+|timerDeleted|被删除|
+|timerRemoving|正在被删除|
+|timerRemoved|已经被停止并从堆中删除|
+|timerModifying|正在被修改|
+|timerModifiedEarlier|被修改到了更早的时间|
+|timerModifiedLater|被修改到了更晚的时间|
+|timerMoving|已经被修改正在被移动|
+
+
+上述表格已经展示了不同状态的含义，但是我们还需要展示一些重要的信息，例如状态的存在时间、计时器是否在堆上等：
+
+- `timerRunning`、`timerRemoving`、`timerModifying` 和 `timerMoving` — 停留的时间都比较短；
+- `timerWaiting`、`timerRunning`、`timerDeleted`、`timerRemoving`、`timerModifying`、`timerModifiedEarlier`、`timerModifiedLater` 和 `timerMoving` — 计时器在处理器的堆上；
+- `timerNoStatus` 和 `timerRemoved` — 计时器不在堆上；
+- `timerModifiedEarlier` 和 `timerModifiedLater` — 计时器虽然在堆上，但是可能位于错误的位置上，需要重新排序；
+
+当我们操作计时器时，运行时会根据状态的不同而做出反应，所以在分析计时器时会将状态作为切入点分析其实现原理。计时器的状态机中包含如下所示的 7 种不同操作，它们分别承担了不同的职责：
+
+- [`runtime.addtimer`](https://draveness.me/golang/tree/runtime.addtimer) — 向当前处理器增加新的计时器
+- [`runtime.deltimer`](https://draveness.me/golang/tree/runtime.deltimer) — 将计时器标记成 `timerDeleted` 删除处理器中的计时器
+- [`runtime.modtimer`](https://draveness.me/golang/tree/runtime.modtimer) — 网络轮询器会调用该函数修改计时器
+- [`runtime.cleantimers`](https://draveness.me/golang/tree/runtime.cleantimers) — 清除队列头中的计时器，能够提升程序创建和删除计时器的性能
+- [`runtime.adjusttimers`](https://draveness.me/golang/tree/runtime.adjusttimers) — 调整处理器持有的计时器堆，包括移动会稍后触发的计时器、删除标记为 `timerDeleted` 的计时器
+- [`runtime.runtimer`](https://draveness.me/golang/tree/runtime.runtimer) — 检查队列头中的计时器，在其准备就绪时运行该计时器[
+
+标准库中的计时器在大多数情况下是能够正常工作并且高效完成任务的，但是在遇到极端情况或者性能敏感场景时，它可能没有办法胜任，而在 10ms 的这个粒度中，作者在社区中也没有找到能够使用的计时器实现，一些使用时间轮算法的开源库也不能很好地完成这个任务。
+
+### 127. Channel
+
+#### 设计原理
+
+##### 先进先出
+
+- 先从 Channel 读取数据的 Goroutine 会先接收到数据；
+- 先向 Channel 发送数据的 Goroutine 会得到先发送数据的权利；
+
+##### 无锁管道
+
+乐观并发控制本质上是基于验证的协议，我们使用原子指令 CAS（compare-and-swap 或者 compare-and-set）在多线程中同步数据，无锁队列的实现也依赖这一原子指令。
+
+Channel 在运行时的内部表示是 [`runtime.hchan`](https://draveness.me/golang/tree/runtime.hchan)，该结构体中包含了用于保护成员变量的互斥锁，从某种程度上说，Channel 是一个用于同步和通信的有锁队列，使用互斥锁解决程序中可能存在的线程竞争问题是很常见的，我们能很容易地实现有锁队列。
+
+然而锁导致的休眠和唤醒会带来额外的上下文切换，如果临界区[6](https://draveness.me/golang/docs/part3-runtime/ch06-concurrency/golang-channel/#fn:6)过大，加锁解锁导致的额外开销就会成为性能瓶颈。
+
+因为目前通过 CAS 实现的无锁 Channel 没有提供先进先出的特性，所以该提案暂时也被搁浅了。
+
+#### 数据结构
+
+Go 语言的 Channel 在运行时使用 [`runtime.hchan`](https://draveness.me/golang/tree/runtime.hchan) 结构体表示。我们在 Go 语言中创建新的 Channel 时，实际上创建的都是如下所示的结构：
+
+```go
+type hchan struct {
+	qcount   uint
+	dataqsiz uint
+	buf      unsafe.Pointer
+	elemsize uint16
+	closed   uint32
+	elemtype *_type
+	sendx    uint
+	recvx    uint
+	recvq    waitq
+	sendq    waitq
+
+	lock mutex
+}
+```
+
+[`runtime.hchan`](https://draveness.me/golang/tree/runtime.hchan) 结构体中的五个字段 `qcount`、`dataqsiz`、`buf`、`sendx`、`recv` 构建底层的循环队列：
+
+- `qcount` — Channel 中的元素个数；
+- `dataqsiz` — Channel 中的循环队列的长度；
+- `buf` — Channel 的缓冲区数据指针；
+- `sendx` — Channel 的发送操作处理到的位置；
+- `recvx` — Channel 的接收操作处理到的位置；
+
+除此之外，`elemsize` 和 `elemtype` 分别表示当前 Channel 能够收发的元素类型和大小；`sendq` 和 `recvq` 存储了当前 Channel 由于缓冲区空间不足而阻塞的 Goroutine 列表，这些等待队列使用双向链表 [`runtime.waitq`](https://draveness.me/golang/tree/runtime.waitq)表示，链表中所有的元素都是 [`runtime.sudog`](https://draveness.me/golang/tree/runtime.sudog) 结构：
+
+```go
+type waitq struct {
+	first *sudog
+	last  *sudog
+}
+```
+
+[`runtime.sudog`](https://draveness.me/golang/tree/runtime.sudog) 表示一个在等待列表中的 Goroutine，该结构中存储了两个分别指向前后 [`runtime.sudog`](https://draveness.me/golang/tree/runtime.sudog) 的指针以构成链表。
+
+#### 发送数据
+
+1. 如果当前 Channel 的 `recvq` 上存在已经被阻塞的 Goroutine，那么会直接将数据发送给当前 Goroutine 并将其设置成下一个运行的 Goroutine；
+2. 如果 Channel 存在缓冲区并且其中还有空闲的容量，我们会直接将数据存储到缓冲区 `sendx` 所在的位置上；
+3. 如果不满足上面的两种情况，会创建一个 [`runtime.sudog`](https://draveness.me/golang/tree/runtime.sudog) 结构并将其加入 Channel 的 `sendq` 队列中，当前 Goroutine 也会陷入阻塞等待其他的协程从 Channel 接收数据；
+
+发送数据的过程中包含几个会触发 Goroutine 调度的时机：
+
+1. 发送数据时发现 Channel 上存在等待接收数据的 Goroutine，立刻设置处理器的 `runnext` 属性，但是并不会立刻触发调度；
+2. 发送数据时并没有找到接收方并且缓冲区已经满了，这时会将自己加入 Channel 的 `sendq` 队列并调用 [`runtime.goparkunlock`](https://draveness.me/golang/tree/runtime.goparkunlock) 触发 Goroutine 的调度让出处理器的使用权；
+
+#### 接收数据
+
+1. 如果 Channel 为空，那么会直接调用 [`runtime.gopark`](https://draveness.me/golang/tree/runtime.gopark) 挂起当前 Goroutine；
+2. 如果 Channel 已经关闭并且缓冲区没有任何数据，[`runtime.chanrecv`](https://draveness.me/golang/tree/runtime.chanrecv) 会直接返回；
+3. 如果 Channel 的 `sendq` 队列中存在挂起的 Goroutine，会将 `recvx`索引所在的数据拷贝到接收变量所在的内存空间上并将 `sendq` 队列中 Goroutine 的数据拷贝到缓冲区；
+4. 如果 Channel 的缓冲区中包含数据，那么直接读取 `recvx` 索引对应的数据；
+5. 在默认情况下会挂起当前的 Goroutine，将 [`runtime.sudog`](https://draveness.me/golang/tree/runtime.sudog) 结构加入 `recvq` 队列并陷入休眠等待调度器的唤醒；
+
+总结一下从 Channel 接收数据时，会触发 Goroutine 调度的两个时机：
+
+1. 当 Channel 为空时；
+2. 当缓冲区中不存在数据并且也不存在数据的发送者时；
+
