@@ -2908,3 +2908,195 @@ type waitq struct {
 1. 当 Channel 为空时；
 2. 当缓冲区中不存在数据并且也不存在数据的发送者时；
 
+### 128. 调度器
+
+#### 多线程调度器
+
+多线程调度器的主要问题是调度时的锁竞争会严重浪费资源，[Scalable Go Scheduler Design Doc](http://golang.org/s/go11sched) 中对调度器做的性能测试发现 14% 的时间都花费在 [`runtime.futex:go1.0.1`](https://draveness.me/golang/tree/runtime.futex:go1.0.1) 上，该调度器有以下问题需要解决：
+
+1. 调度器和锁是全局资源，所有的调度状态都是中心化存储的，锁竞争问题严重；
+2. 线程需要经常互相传递可运行的 Goroutine，引入了大量的延迟；
+3. 每个线程都需要处理内存缓存，导致大量的内存占用并影响数据局部性；
+4. 系统调用频繁阻塞和解除阻塞正在运行的线程，增加了额外开销；
+
+#### 任务窃取调度器
+
+1. 在当前的 G-M 模型中引入了处理器 P，增加中间层；
+2. 在处理器 P 的基础上实现基于工作窃取的调度器；
+
+当前处理器本地的运行队列中不包含 Goroutine 时，调用 [`runtime.findrunnable:779c45a`](https://draveness.me/golang/tree/runtime.findrunnable:779c45a) 会触发工作窃取，从其它的处理器的队列中随机获取一些 Goroutine。
+
+基于工作窃取的多线程调度器将每一个线程绑定到了独立的 CPU 上，这些线程会被不同处理器管理，不同的处理器通过工作窃取对任务进行再分配实现任务的平衡，也能提升调度器和 Go 语言程序的整体性能，今天所有的 Go 语言服务都受益于这一改动。
+
+#### 抢占式调度器
+
+对 Go 语言并发模型的修改提升了调度器的性能，但是 1.1 版本中的调度器仍然不支持抢占式调度，程序只能依靠 Goroutine 主动让出 CPU 资源才能触发调度。Go 语言的调度器在 1.2 版本中引入基于协作的抢占式调度解决下面的问题
+
+- 某些 Goroutine 可以长时间占用线程，造成其它 Goroutine 的饥饿；
+- 垃圾回收需要暂停整个程序（Stop-the-world，STW），最长可能需要几分钟的时间，导致整个程序无法工作；
+
+1.2 版本的抢占式调度虽然能够缓解这个问题，但是它实现的抢占式调度是基于协作的，在之后很长的一段时间里 Go 语言的调度器都有一些无法被抢占的边缘情况，例如：for 循环或者垃圾回收长时间占用线程，这些问题中的一部分直到 1.14 才被基于信号的抢占式调度解决。
+
+#### 数据结构
+
+1. G — 表示 Goroutine，它是一个待执行的任务；
+2. M — 表示操作系统的线程，它由操作系统的调度器调度和管理；
+3. P — 表示处理器，它可以被看做运行在线程上的本地调度器；
+
+##### G
+
+Goroutine 是 Go 语言调度器中待执行的任务，它在运行时调度器中的地位与线程在操作系统中差不多，但是它占用了更小的内存空间，也降低了上下文切换的开销。
+
+Goroutine 只存在于 Go 语言的运行时，它是 Go 语言在用户态提供的线程，作为一种粒度更细的资源调度单元，如果使用得当能够在高并发的场景下更高效地利用机器的 CPU。
+
+Goroutine 在 Go 语言运行时使用私有结构体 [`runtime.g`](https://draveness.me/golang/tree/runtime.g) 表示。这个私有结构体非常复杂，总共包含 40 多个用于表示各种状态的成员变量，这里也不会介绍所有的字段，仅会挑选其中的一部分。
+
+```go
+type g struct {
+	preempt       bool // 抢占信号
+	preemptStop   bool // 抢占时将状态修改成 `_Gpreempted`
+	preemptShrink bool // 在同步安全点收缩栈
+}
+```
+
+Goroutine 与我们在前面章节提到的 `defer` 和 `panic` 也有千丝万缕的联系，每一个 Goroutine 上都持有两个分别存储 `defer` 和 `panic` 对应结构体的链表：
+
+```go
+type g struct {
+	_panic       *_panic // 最内侧的 panic 结构体
+	_defer       *_defer // 最内侧的延迟函数结构体
+}
+```
+
+最后，我们再节选一些比较有趣或者重要的字段：
+
+```go
+type g struct {
+	m              *m
+	sched          gobuf
+	atomicstatus   uint32
+	goid           int64
+}
+```
+
+- `m` — 当前 Goroutine 占用的线程，可能为空；
+- `atomicstatus` — Goroutine 的状态；
+- `sched` — 存储 Goroutine 的调度相关的数据；
+- `goid` — Goroutine 的 ID，该字段对开发者不可见，Go 团队认为引入 ID 会让部分 Goroutine 变得更特殊，从而限制语言的并发能力；
+
+##### M
+
+Go 语言并发模型中的 M 是操作系统线程。调度器最多可以创建 10000 个线程，但是其中大多数的线程都不会执行用户代码（可能陷入系统调用），最多只会有 `GOMAXPROCS` 个活跃线程能够正常运行。
+
+在默认情况下，运行时会将 `GOMAXPROCS` 设置成当前机器的核数，我们也可以在程序中使用 [`runtime.GOMAXPROCS`](https://draveness.me/golang/tree/runtime.GOMAXPROCS) 来改变最大的活跃线程数。一个四核机器会创建四个活跃的操作系统线程，每一个线程都对应一个运行时中的 [`runtime.m`](https://draveness.me/golang/tree/runtime.m) 结构体。
+
+在大多数情况下，我们都会使用 Go 的默认设置，也就是线程数等于 CPU 数，默认的设置不会频繁触发操作系统的线程调度和上下文切换，所有的调度都会发生在用户态，由 Go 语言调度器触发，能够减少很多额外开销。
+
+Go 语言会使用私有结构体 [`runtime.m`](https://draveness.me/golang/tree/runtime.m) 表示操作系统线程
+
+```go
+type m struct {
+	g0   *g
+	curg *g
+	...
+}
+```
+
+其中 g0 是持有调度栈的 Goroutine，`curg` 是在当前线程上运行的用户 Goroutine，这也是操作系统线程唯一关心的两个 Goroutine。
+
+##### P
+
+调度器中的处理器 P 是线程和 Goroutine 的中间层，它能提供线程需要的上下文环境，也会负责调度线程上的等待队列，通过处理器 P 的调度，每一个内核线程都能够执行多个 Goroutine，它能在 Goroutine 进行一些 I/O 操作时及时让出计算资源，提高线程的利用率。
+
+因为调度器在启动时就会创建 `GOMAXPROCS` 个处理器，所以 Go 语言程序的处理器数量一定会等于 `GOMAXPROCS`，这些处理器会绑定到不同的内核线程上。
+
+[`runtime.p`](https://draveness.me/golang/tree/runtime.p) 是处理器的运行时表示，作为调度器的内部实现，它包含的字段也非常多，其中包括与性能追踪、垃圾回收和计时器相关的字段，我们主要关注处理器中的线程和运行队列：
+
+```go
+type p struct {
+	m           muintptr
+
+	runqhead uint32
+	runqtail uint32
+	runq     [256]guintptr
+	runnext guintptr
+	...
+}
+```
+
+反向存储的线程维护着线程与处理器之间的关系，而 `runqhead`、`runqtail` 和 `runq` 三个字段表示处理器持有的运行队列，其中存储着待执行的 Goroutine 列表，`runnext` 中是线程下一个需要执行的 Goroutine。
+
+#### 运行队列
+
+Go 语言有两个运行队列，其中一个是处理器本地的运行队列，另一个是调度器持有的全局运行队列，只有在本地运行队列没有剩余空间时才会使用全局队列。
+
+### 129. 网络轮询器
+
+#### 设计原理
+
+##### 堵塞I/O
+
+阻塞 I/O 是最常见的 I/O 模型，在默认情况下，当我们通过 `read` 或者 `write` 等系统调用读写文件或者网络时，应用程序会被阻塞：
+
+```c
+ssize_t read(int fd, void *buf, size_t count);
+ssize_t write(int fd, const void *buf, size_t nbytes);
+```
+
+##### 非阻塞I/O
+
+第一次从文件描述符中读取数据会触发系统调用并返回 `EAGAIN` 错误，`EAGAIN` 意味着该文件描述符还在等待缓冲区中的数据；随后，应用程序会不断轮询调用 `read` 直到它的返回值大于 0，这时应用程序就可以对读取操作系统缓冲区中的数据并进行操作。进程使用非阻塞的 I/O 操作时，可以在等待过程中执行其他任务，提高 CPU 的利用率。
+
+##### I/O多路复用
+
+I/O 多路复用被用来处理同一个事件循环中的多个 I/O 事件。I/O 多路复用需要使用特定的系统调用，最常见的系统调用是 [`select`](https://github.com/torvalds/linux/blob/f757165705e92db62f85a1ad287e9251d1f2cd82/fs/select.c#L722)，该函数可以同时监听最多 1024 个文件描述符的可读或者可写状态：
+
+```c
+int select(int nfds, fd_set *restrict readfds, fd_set *restrict writefds, fd_set *restrict errorfds, struct timeval *restrict timeout);
+```
+
+除了标准的 [`select`](https://github.com/torvalds/linux/blob/f757165705e92db62f85a1ad287e9251d1f2cd82/fs/select.c#L722) 之外，操作系统中还提供了一个比较相似的 `poll` 函数，它使用链表存储文件描述符，摆脱了 1024 的数量上限。
+
+多路复用函数会阻塞的监听一组文件描述符，当文件描述符的状态转变为可读或者可写时，`select` 会返回可读或者可写事件的个数，应用程序可以在输入的文件描述符中查找哪些可读或者可写，然后执行相应的操作。
+
+##### 多模块
+
+为了提高 I/O 多路复用的性能，不同的操作系统也都实现了自己的 I/O 多路复用函数，例如：`epoll`、`kqueue` 和 `evport` 等。Go 语言为了提高在不同操作系统上的 I/O 操作性能，使用平台特定的函数实现了多个版本的网络轮询模块：
+
+- [`src/runtime/netpoll_epoll.go`](https://github.com/golang/go/blob/master/src/runtime/netpoll_epoll.go)
+- [`src/runtime/netpoll_kqueue.go`](https://github.com/golang/go/blob/master/src/runtime/netpoll_kqueue.go)
+- [`src/runtime/netpoll_solaris.go`](https://github.com/golang/go/blob/master/src/runtime/netpoll_solaris.go)
+- [`src/runtime/netpoll_windows.go`](https://github.com/golang/go/blob/master/src/runtime/netpoll_windows.go)
+- [`src/runtime/netpoll_aix.go`](https://github.com/golang/go/blob/master/src/runtime/netpoll_aix.go)
+- [`src/runtime/netpoll_fake.go`](https://github.com/golang/go/blob/master/src/runtime/netpoll_fake.go)
+
+这些模块在不同平台上实现了相同的功能，构成了一个常见的树形结构。编译器在编译 Go 语言程序时，会根据目标平台选择树中特定的分支进行编译。
+
+#### 数据结构
+
+操作系统中 I/O 多路复用函数会监控文件描述符的可读或者可写，而 Go 语言网络轮询器会监听 [`runtime.pollDesc`](https://draveness.me/golang/tree/runtime.pollDesc) 结构体的状态，它会封装操作系统的文件描述符：
+
+```go
+type pollDesc struct {
+	link *pollDesc
+
+	lock    mutex
+	fd      uintptr
+	...
+	rseq    uintptr
+	rg      uintptr
+	rt      timer
+	rd      int64
+	wseq    uintptr
+	wg      uintptr
+	wt      timer
+	wd      int64
+}
+```
+
+该结构体中包含用于监控可读和可写状态的变量，我们按照功能将它们分成以下四组：
+
+- `rseq` 和 `wseq` — 表示文件描述符被重用或者计时器被重置；
+- `rg` 和 `wg` — 表示二进制的信号量，可能为 `pdReady`、`pdWait`、等待文件描述符可读或者可写的 Goroutine 以及 `nil`；
+- `rd` 和 `wd` — 等待文件描述符可读或者可写的截止日期；
+- `rt` 和 `wt` — 用于等待文件描述符的计时器；
