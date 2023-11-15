@@ -19,13 +19,14 @@
 * [云原生与 DevOps](cs/devops.md)
 * [安全](cs/sc.md)
 * [数据结构与算法](cs/al.md)
-* [场景题](cs/scene.md)
+* [场景](cs/scene.md)
 
 ## 🧑🏻‍🏫 CS 系统总结 <a href="#cssys" id="cssys"></a>
 
 - [Go 底层设计](cssys/go-sys.md)
 - [Go 高手技法](cssys/go-ez.md)
 - [K8s 入门实战](cssys/k8s-begin.md)
+- [分布式系统典型实例](cssys/distributed-case.md)
 
 ## 📝 Leetcode
 
