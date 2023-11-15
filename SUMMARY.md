@@ -23,7 +23,8 @@
 
 ## 🧑🏻‍🏫 CS 系统总结 <a href="#cssys" id="cssys"></a>
 
-- [Golang 底层设计](cssys/go-sys.md)
+- [Go 底层设计](cssys/go-sys.md)
+- [Go 高手技法](cssys/go-ez.md)
 
 ## 📝 Leetcode
 
