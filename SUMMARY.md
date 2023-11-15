@@ -25,6 +25,7 @@
 
 - [Go 底层设计](cssys/go-sys.md)
 - [Go 高手技法](cssys/go-ez.md)
+- [K8s 入门实战](cssys/k8s-begin.md)
 
 ## 📝 Leetcode
 
