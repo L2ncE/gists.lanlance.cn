@@ -8,6 +8,7 @@
 * [Python](cs/py.md)
 * [C++](cs/cpp.md)
 * [Rust](cs/rust.md)
+* [汇编原理与 RISC-V](cs/risc.md)
 * [计算机网络](cs/cn.md)
 * [操作系统与 Linux](cs/os.md)
 * [MySQL](cs/mysql.md)
