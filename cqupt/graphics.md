@@ -43,25 +43,25 @@
 
 ##### 缩放变换
 
-![[Pasted image 20231225204517.png]]
+![](https://picture.lanlance.cn/i/2023/12/25/658983ce0cc11.png)
 
 当 Sx == Sy 时为均匀缩放，反之为非均匀缩放。
 
 性质：
 
-![[Pasted image 20231225204629.png]]
+![](https://picture.lanlance.cn/i/2023/12/25/658983e5d51b5.png)
 
 ##### 对称变换
 
 关于 x 轴，y 轴，原点的对称变换是特殊的缩放变换。
 
-![[Pasted image 20231225204805.png]]
+![](https://picture.lanlance.cn/i/2023/12/25/658983f9b3b20.png)
 
 ##### 错切变换
 
 用于描述弹性物体的变形。
 
-![[Pasted image 20231225204929.png]]
+![](https://picture.lanlance.cn/i/2023/12/25/65898409f2c2f.png)
 
 ##### 逆变换
 
@@ -79,11 +79,11 @@
 
 性质：复合变换不满足可交换性
 
-![[Pasted image 20231225205138.png]]
+![](https://picture.lanlance.cn/i/2023/12/25/6589841611356.png)
 
 #### 关于参考点旋转
 
-![[Pasted image 20231225210643.png]]
+![](https://picture.lanlance.cn/i/2023/12/25/6589841eebbe2.png)
 
 相对某个参考点 (xr,yr) 的旋转变换：
 
@@ -93,11 +93,11 @@
 
 (3) 作反平移
 
-![[Pasted image 20231225210709.png]]
+![](https://picture.lanlance.cn/i/2023/12/25/658984272c36f.png)
 
 #### 矩阵乘向量
 
-![[Pasted image 20231225210850.png]]
+![](https://picture.lanlance.cn/i/2023/12/25/6589843273e98.png)
 
 #### 齐次坐标
 
@@ -109,17 +109,76 @@
 
 ##### 普通坐标与齐次坐标的关系
 
-![[Pasted image 20231225211108.png]]
+![](https://picture.lanlance.cn/i/2023/12/25/6589843fd0a88.png)
 
 ##### 规范化齐次坐标
 
 h=1 时的齐次坐标成为规范化齐次坐标。
 
-![[Pasted image 20231225211256.png]]
+![](https://picture.lanlance.cn/i/2023/12/25/658984523180b.png)
 
 ##### 矩阵乘向量
 
-![[Pasted image 20231225211346.png]]
+![](https://picture.lanlance.cn/i/2023/12/25/6589845876d54.png)
 
 ### 三维图形变换
+
+坐标系不动，点动。
+
+特点：
+1. 比 2D 增加了 z 坐标
+2. 比 2D 更复杂、更真实
+
+三维几何变换性质：
+- 平移——改变位置
+- 旋转——改变方向
+- 缩放——改变大小和形状
+- 对称
+- 错切
+
+#### 平移变换
+
+![](https://picture.lanlance.cn/i/2023/12/25/65898632cded3.png)
+
+只改变位置，不改变大小和形状。
+
+#### 旋转变换
+
+##### 绕三个坐标轴的旋转
+
+绕 z 轴旋转：约定人眼在 z 轴正方向，看向原点，逆时针为正方向
+
+##### 绕三个坐标轴正方向旋转
+
+![](https://picture.lanlance.cn/i/2023/12/25/6589876f90114.png)
+
+##### 绕任意轴的旋转
+
+eg.
+
+![](https://picture.lanlance.cn/i/2023/12/25/658987e3adf0c.png)
+
+#### 缩放变换
+
+![](https://picture.lanlance.cn/i/2023/12/25/6589889f79215.png)
+
+#### 错切变换
+
+![](https://picture.lanlance.cn/i/2023/12/25/658988f0a9e23.png)
+
+#### 投影变换
+
+数学上：从n维空间到k(<n)维空间的变换。
+CG：从3D空间到2D平面的变换。
+
+物体在3D空间，屏幕在2D平面，必须作投影变换。投影变换是3D图形学的核心。
+
+##### 基本概念
+
+![](https://picture.lanlance.cn/i/2023/12/25/6589897576820.png)
+
+投影中心：相当于人眼或相机，也称视点或观察点
+投影线：相当于光线
+投影面：相当于成像平面，位于COP和物体之间
+投影线与投影面相交，在投影面上的像就是物体的投影。
 
