@@ -1,5 +1,7 @@
 # 计算机网络
 
+转载自：[《计算机网络》（谢希仁）内容总结 | JavaGuide](https://javaguide.cn/cs-basics/network/computer-network-xiexiren-summary.html)
+
 ## 1. 计算机网络概述
 
 ### 1.1. 基本术语
