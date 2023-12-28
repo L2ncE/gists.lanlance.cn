@@ -78,3 +78,4 @@
 * [计算机组织与结构](cqupt/jz.md)
 * [计算机图形学](cqupt/graphics.md)
 * [大数据导论](cqupt/bigdata.md)
+* [计算机网络](cqupt/cn.md)
