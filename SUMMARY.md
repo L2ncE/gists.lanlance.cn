@@ -28,6 +28,7 @@
 - [Go 高手技法](cssys/go-ez.md)
 - [K8s 入门实战](cssys/k8s-begin.md)
 - [分布式系统典型实例](cssys/distributed-case.md)
+- [数据密集型应用系统设计](cssys/ddia.md)
 
 ## 📝 Leetcode
 
