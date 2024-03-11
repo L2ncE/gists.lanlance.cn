@@ -550,3 +550,39 @@ func main() {
 对于我们想要复用的对象，我们只需要为其实现 Recycle() 方法，在程序确定对象不再需要被使用时，调用 .Recycle() ，便可将其重置并释放，留给程序下一次需要对象时使用。
 
 需要注意的是，对象能够被复用的前提是我们能够精确控制对象的使用生命周期，如果我们提前释放了一个正在其他地方被使用的对象，有可能引发不可预料的错误。
+
+### 优雅的错误处理
+
+将 `if err != nil` 判断逻辑封装到 Write 方法中，使代码清晰易读。
+
+```go
+type errWriter struct {
+    w io.Writer
+    err error
+}
+
+func (e *errWriter) Write(p []byte) {
+    if e.err != nil {
+        return
+    }
+    _, e.err = e.w.Write(p)
+}
+
+func (e *errWriter) Err() error {
+    return e.err
+}
+
+func do() {
+    ew := &errWriter{
+        w: ...
+    }
+    ew.Write(buf)
+    ew.Write(buf)
+    ...
+    ...
+    if ew.Err() != nil {
+        return ew.Err()
+    }
+    return nil
+}
+```
