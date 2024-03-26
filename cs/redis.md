@@ -705,6 +705,10 @@ Redis 底层使用的通信协议是 RESP（Redis Serialization Protocol 的缩�
 
 Redis 集群默认情况下有 16384 个槽。这是因为 Redis 使用哈希槽（hash slots）来分片数据，并将数据分布在多个节点上。每个槽可以保存一个键值对，因此 Redis 集群最多可以保存 16384 个键值对。
 
-### 68. 1. Redis 如何解决 hash 结构的冲突
+### 68. Redis 如何解决 hash 结构的冲突
 
 Redis 在哈希结构中使用了链地址法来解决冲突。具体实现中，Redis 使用了链表和跳表（Skip List）这两种数据结构来存储冲突的键。当链表过长时，Redis 会将链表转换为跳表，以提高查找效率。
+
+### 69. Redis保证incr命令原子性的原理是什么？
+
+因为 Redis 是单线程的。
